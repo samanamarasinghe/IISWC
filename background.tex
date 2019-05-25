@@ -1,0 +1,75 @@
+\section{Background}
+
+\subsection{Existing Performance Model}
+IACA (Intel Architecture Code Analyzer) is a static analyzer
+developed by Intel. It has support for Intel micro-architectures
+since Nehalem.
+Given a machine code snippet, IACA estimates the average number
+of cycles it cost to execute the given code in an infinite 
+loop (i.e. the reverse throughput).
+Unlike its alternatives, IACA takes advantage of its knowledge
+of Intel's proprietary processor optimization
+-- such as zero-idioms and micro-op fusions -- to make better 
+predictions.
+
+llvm-mca is a similar tool inspired by IACA. 
+It is implemented as an out-of-order super-scalar simulator,
+using parameters (e.g. instruction throughput)
+supplied by LLVM\cite{llvm}'s backend scheduling model.
+The reuse of scheduling model is an explicit design choice
+made to expose LLVM's cost model for testing.
+Thus the accuracy by llvm-mca has a bearing on the 
+that of LLVM's scheduling model.
+
+OSACA\cite{osaca} is an analyzer developed as the open-source
+alternative to IACA. It is similar to llvm-mca in that
+it is implemented as a paramatrized out-of-order simulator
+-- in this case the parameters comes from measured throughput
+and latency data for individual instructions.
+
+Ithemal\cite{ithemal} is a basic block throughput predictor
+implemented as a deep neural network. Unlike aforementioned 
+tools, Ithemal outputs a single throughput prediction for each
+input basic block without reporting an interpretable execution
+trace of the constituting instructions.
+Though potentially Ithemal can be a more acurate predictor
+due to its data-driven nature, the lack of a corresponding 
+trace makes it harder for performance engineers to pinpoint
+the bottleneck of their code.
+
+Abel and Reineke\cite{uops} recently published their methodology
+to reverse engineer the detailed mapping of micro-ops
+from each instruction to the execution ports combination
+that they can use. Using this mapping, they are able to compute the 
+throughput of individual instructions.
+
+\subsection{Validation Challenges}
+We briefly discuss the reasons behind the lack of validation for existing models.
+The challenge of doing such validation is two-fold:
+\begin{enumerate}
+    \item \textbf{Coverage}.
+    Modern architectures contains various optimizations --
+    such as zero-idiom and micro-op fusion.
+    Some of these optimizations are not documented.
+    To validate performance models effectively, one would need to take 
+    these optimization into account.
+    A wide range of code sequences are needed to reveal a predictor's 
+    weakness (or the lack of) in modelling the complex interaction of 
+    individual instructions in modern hardware.
+    
+    \item \textbf{Measuring the ground truth at scale}.
+    The only way to get the actual performance of a code snippet is
+    to execute it.
+    A typical computing environment is noisy and can pollute measurements.
+    One needs to be aware of the impact of interfering events such as
+    multi-threading and context-switches.
+    Even more worse is the problem of automatically profiling 
+    \textit{arbitrary} code snippets involving memory accesses,
+    which is unavoidable were one to reach the coverage required to
+    overcome the first challenge.
+\end{enumerate}
+
+
+% TODO:
+% 1. talk about compiler cost models (both LLVM and GCC), mention that there is a chicken and egg issues
+% 2. talk about stuff like agner fog's script

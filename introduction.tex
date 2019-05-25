@@ -1,0 +1,86 @@
+\section{Introduction}
+Many optimizations, whether manual or automatic,
+benefit from performance models.
+Static performance models such as IACA lessen programmers
+the burden of isolating performance kernels from
+the rest of the applications,
+and of properly implementing micro-benchmark. Many compiler optimizations
+use cost models of one form or another:
+a typical automatic vectorizer, for instance,
+use one to estimate the cost of vector packing
+in the presence of irregular memory accesses;
+instruction schedulers uses one to model the latency
+and throughput of instructions.
+
+Cost models however often take a back seat to “actual” optimizations,
+despite the accuracy of former ensures the effectiveness of latter.
+For instance, Mendis et al.\cite{goslp}
+recently published a technique to perform optimal\footnote{
+Witch certain caveat.
+In particular their formulation is optimal
+only when the target machine only has vector-width of 2}
+SLP Vectorization\cite{slp} that
+incurred slowdown in some instances due to the inaccuracy of 
+LLVM's cost models.
+Without a comprehensive benchmark to pinpoint the weakness of their models,
+developers cannot systematically improve these cost models;
+model parameters
+such as the throughput of individual instructions
+are sometimes chosen haphazardly;
+consider following quote taken from a commit message from LLVM\cite{llvm}
+regarding its cost model\footnote{
+https://reviews.llvm.org/D46276.
+}:
+\begin{quote}
+X86's fix to avoid SDIV/UDIV vectorization is clumsy
+(multiplying the vector costs x20)
+and appears to have been implemented before the cost of
+scalarization was being realistically accounted for...
+\end{quote}
+
+We describe a benchmark for validating performance models
+of x86 basic blocks.
+In this work we focus on throughput prediction.
+We make the following contributions:
+\begin{enumerate}
+\item We collected basic blocks from a wide range of domains.
+This data set, together with additional profile information we collected,
+can be used to design and validate low level optimizations
+such as backend peephole optimizers,
+in addition to its primary purpose of model validation.
+
+\item We describe a fully automatic technique
+for measuring the throughput of basic blocks extracted 
+from raw binaries.
+This is much more than simply unrolling a basic block
+and measure the latency,
+since code snippets with memory accesses (and most do)
+generally cannot be executed safely
+outside of the context of their source applications.
+Our methodology, when implemented, is accurate and fast.
+Depends on the context -- 
+if a developer is only interested in the performance of a code snippet
+but not how constituent instructions contribute to the final
+throughput -- our tool outperforms IACA in both speed and accuracy.
+
+\item We automatically classified the basic blocks
+by their usage of different execution ports.
+This classification allows developers to pinpoint weakness
+of their performance models.
+Maintainers of an automatic vectorizer, for instance,
+can use this to fine-tune cost models
+of vectorized basic blocks.
+
+\item We evaluated four existing cost models:
+IACA, llvm-mca -- 
+which exposes LLVM’s internal optimization cost models,
+OSACA\cite{osaca}, and Ithemal\cite{ithemal}.
+We breakdown the strength and weakness of these cost models on
+different classes of basic blocks;
+e.g. we show that all such tools
+have average error higher than 30\% 
+when used to analyze numerical kernels running on Haswell machines.
+
+
+
+\end{enumerate}

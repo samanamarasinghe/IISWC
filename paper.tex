@@ -1,0 +1,60 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage[inline]{enumitem}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{fancyvrb}
+\usepackage{verbatim}
+\usepackage{url}
+
+\newcommand\hl[1]{\colorbox{red!10}{#1}}
+\newcommand{\ajay}[1]{{\color{magenta} {\bf Ajay:} #1}}
+
+%%%%%%%%%% use lower capse for table caption
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\@makecaption}
+  {\scshape}
+  {}
+  {}
+  {}
+\makeatother
+%%%%%%%%%%%
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+    
+    
+\begin{document}
+
+\title{A Benchmark Suite for Validating x86 Performance Model\\
+}
+
+%\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address}
+%}
+
+\maketitle
+
+\input{abstract}
+\input{keywords}
+\input{introduction}
+\input{background}
+\input{methodology}
+\input{results}
+
+\bibliographystyle{ieeetr}
+\bibliography{paper}
+
+\vspace{12pt}
+
+\end{document}
