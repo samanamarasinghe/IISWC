@@ -7,18 +7,12 @@ We use relative error (i.e. absolute error of the predicted throughput normalize
 as the metric to measure inaccuracy.
 Table \ref{tab:overall} shows the unweighted average error
 of each model on different microarchitectures.
-Note that OSACA\cite{osaca} has the highest overall error.
-To our best knowledge, this is due to a parser error from OSACA.
-OSACA treats unrecognized instructions as no-ops,
-and among the unrecognized ones is any instruction that
-read from an immediate operand and store to a memory operand;
-such instructions are fairly common in real-world use.
 % include ivb and skl
-Figure \ref{fig:hsw-app-err} shows the breakdown of the errors by applications.
-Figure \ref{fig:hsw-cluster-err} shows the breakdown of the errors by basic block clusters
+Figure \ref{fig:hsw-app-err, fig:skl-app-err} shows the breakdown of the errors by applications.
+Figure \ref{fig:hsw-cluster-err, fig:skl-cluster-err} shows the breakdown of the errors by basic block clusters
 (see \ref{classification} for details of basic blocks classification).
 
-Ithemal\cite{ithemal} has the lowest overall error (13.77\%),
+Ithemal\cite{ithemal} has the lowest overall error (12.53\%) on Haswell,
 about 5\% better than the next best model, IACA.
 The overall error of each model can however be unrepresentative
 of its performance on a given domain.
@@ -50,7 +44,7 @@ Microarchitecture & Model & Average Error\\
 Haswell & IACA & 0.1798\\
     & llvm-mca & 0.1832\\
     & Ithemal & 0.1253\\
-    & OSACA & 0.9620\\
+    & OSACA & 0.3916\\
     
 \hline 
 Skylake & IACA & 0.1578\\
