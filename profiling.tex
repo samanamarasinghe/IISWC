@@ -1,0 +1,288 @@
+\section{Basic Block Profiling}
+
+\subsection{Measurement Guarantees}
+We now describe our approach to profiling basic block thoughput.
+We use IACA's definition of throughput, i.e. 
+the average number of cycles required to execute a basic block inside
+an infinite loop.
+We obtain the throughput for a basic block by measuring the unrolled latency,
+from which we derive throughput; latency is measured by reading core cycle counter,
+which is supported in recent versions x86-64 processors.
+
+We make the following guarantees for our measurements.
+\begin{enumerate*}
+    \item All memory data reside in L1 cache.
+    \item Measurements should be free of interrupts, context switches,
+    and hyper-threading.
+\end{enumerate*}
+Admittedly in practice the memory accesses of many basic blocks do not hit L1 cache.
+We nonetheless make sure that during our measurement all memory accesses hit L1 cache 
+because it is the same assumption made by existing models;
+and because of consistency: the throughput of these basic blocks (i.e. those with memory accesses)
+is inherently dependent on the program execution context;
+without knowing the precise context, we favor consistency over generality.
+
+\textbf{Ensuring Measurement Invariants}.
+We monitor the following statistics, in addition to core cycle counts,
+during measurements.
+\begin{enumerate}
+    \item L1 Data Cache Read Misses
+    \item L1 Data Cache Write Misses
+    \item L1 Instruction Cache Misses
+    \item Context Switches
+\end{enumerate}
+If any of the aforementioned counters are non-zero,
+the measurement is discarded.
+Each \textit{unrolled} basic block is timed 16 times by default,
+and we accept a basic block for further analysis only if the basic block has at least 
+8 \textit{clean}, identical timing.
+All basic blocks are measured in machines with hyper-threading disabled.
+We count the elapsed cycles by reading the core cycle counter.
+Unlike reference cycle or time-stamp counter, core cycle counter is invariant
+to performance scaling.
+
+\subsection{Handling memory accesses}
+Consider the basic block in figure \ref{fig:mem-ex},
+which is used to compute the CRC code of input bytes in Gzip.
+Highlighted instructions shows the flow of pointer values;
+essentially \textit{bits} of \verb|rdx| are used to index into a lookup table, 
+and the content of which is then used in the next iteration to 
+update \verb|rdx|.
+How would one profile the throughput of this basic block?
+Without the original application context,
+this basic block \textit{cannot} be directly executed.
+Developer of Gzip familiar with this piece of code could 
+properly setup a micro-benchmark by reproducing the
+relevant lookup table used by this code snippet,
+but such approach would not scale to the hundred of 
+thousands of basic blocks in our data set, most of which contain memory accesses.
+We needed some way to automatically generate the benchmarking environment
+without apriori knowledge/assumption of the code being profiled.
+
+\begin{figure}[h]
+\begin{Verbatim}[commandchars=\#\{\}]
+    add rdi, 1
+    #hl{mov eax, edx}
+    shr rdx, 8
+    #hl{xor al, [rdi - 1]}
+    movzx eax, al
+    #hl{xor rdx, [8*rax + 0x4110a]}
+    cmp rdi, rcx
+\end{Verbatim}
+\caption{Inner loop body of updcrc from Gzip.
+This basic block cannot be directly executed because
+of its memory accesses.}
+\label{fig:mem-ex}
+\end{figure}
+
+\begin{figure}
+\begin{algorithmic}
+
+\Function{measure}{}
+    \State $page \gets \Call{getRegisterValue}{rax}$
+    \State $\Call{mmapToChosenPhysPage}{page, ...}$
+    \State $\Call{initialize}{}$
+    \State $\Call{executeUnrolledBasicBlock}{}$
+    
+    \Comment{After this point all memory accesses made by the basic block is legal
+    and goes to L1 cache}
+    
+    \State $begin \gets \Call{readPerformanceCounters}{}$
+    \State $\Call{initialize}{}$
+    \State $\Call{executeUnrolledBasicBlock}{}$
+    \State $end \gets \Call{readPerformanceCounters}{}$
+    \State $\Call{analyzeAndReportCounters}{begin, end}$
+\EndFunction
+
+\Function{monitor}{}
+    \State $pid \gets \Call{launchAndMonitor}{measure}$
+    \State $numFaults \gets 0$
+    \While{$true$}
+        \State $memAddr \gets \Call{interceptSegFault}{pid}$
+        \If{$\Call{isValidAddr}{memAddr}$}
+            \State $page \gets \Call{getPageAddr}{memAddr}$
+            \State $\Call{setRAX}{pid, page}$
+            \State $\Call{setInstructionPointer}{pid, measure}$
+            \State $\Call{resumeProcessExecution}{pid, measure}$
+            \State $numFaults \gets numFaults + 1$
+        \EndIf
+        \If{$numFaults > maxNumFaults$}
+            \State $\Call{kill}{pid}$
+            \State \textbf{break}
+        \EndIf
+    \EndWhile
+\EndFunction
+
+\end{algorithmic}
+
+\caption{Pseudocode of the our profiling routines. 
+\textit{measure} runs in a child process monitored by
+\textit{monitor}.
+We execute an input basic block twice.
+The first execution is used to discover virtual pages accessed
+by the basic block, which are the then mapped to a single physical page.
+We collect performance statistics in the second execution.}
+\label{fig:code}
+\end{figure}
+
+%TODO: point out concretely why previous approach, including prefixing
+% addresses with the array does not work
+A tempting solution~\cite{ithemal} is rewriting
+the basic block so that all memory accesses are
+relative to a pre-allocated array.
+For instance, \verb|mov [rdx], 1| is rewritten to
+\verb|mov [array_address+rdx], 1|\footnote{
+A cleverer solution is to
+base the address off the \textit{midpoint} of the array
+in anticipation of negative indices.
+}. 
+This approach however is not likely to produce a satisfying measurement
+for our example.
+In our example,
+because of the hardcoded offset -- \verb|0x4110a|,
+the rewriting scheme can reliably prevent crashes only when the pre-allocated array
+is bigger than 260 kilobytes, much bigger than the L1-caches of existing microarchitectures.
+Additionally, this approach has several issues:
+\begin{itemize}
+    \item Executing some basic blocks back to back can result in a 
+    diverging (e.g. strided) access pattern. 
+    One would need to pre-allocate an unrealistically large array
+    in order to  accommodate for this pattern, 
+    Even when a sufficiently large buffer could be allocated,
+    this access pattern can result in cache misses, 
+    which we want to avoid.
+    \item The scheme does not take stack accesses into account; i.e. \verb|push|s and \verb|pop|s
+    are not considered.
+    \item Rewritten instructions can
+    have larger encoding, which can affect throughput
+    of front-end bound basic blocks.
+\end{itemize}
+
+We avoid these pitfalls with a new technique
+that divides the profiling process into two stages:
+\begin{enumerate*}
+\item We profile the virtual pages accessed by
+the basic block (were it to run without crashing)
+and map those pages to a single physical page.
+\item After the appropriate mappings are created,
+the unrolled basic block is then executed normally under
+the new page mapping.
+\end{enumerate*}
+
+\textbf{Remapping pages to legalize memory accesses}
+In addition to legalizing all memory accesses made by the basic block,
+the mapping stage also ensures that all memory accesses stay in
+the L1 cache.
+Figure~\ref{fig:code} shows the algorithm we use to do page mapping.
+Mapping is done by executing the unrolled basic block in a forked process
+ monitored by a parent process using \verb|ptrace|.
+Each attempt to access an unmapped virtual page is intercepted by
+the monitoring process, which then instructs the 
+executing process to create the appropriate mapping
+and to restart execution from the \textit{beginning}
+with all registers, memory values,
+as well as flag registers reinitialized.
+Re-initialization is done to ensure that in the final measurement
+stage the trace of memory addresses computed by the 
+unrolled basic block is \textit{identical} to that from the mapping stage.
+An alternative we considered was using a single process for both execution
+and monitoring, but we ultimately disconsiderred this alternative due to
+its complexity.
+
+\subsection{Additional measurement optimizations}
+We make additional optimizations to further increase our chance
+of successfully obtaining clean measurements.
+
+\textbf{Memory Initialization} 
+Prior to the mapping-run,
+we unmap all pages (except those containing the basic block).
+This allows us to run basic blocks that inadvertently
+writes to library code such as libc.
+The physical page is
+always initialized to be filled with a “moderately sized” constant
+(we used \verb|0x12345600| in our experiments)
+to accommodate for indirect memory accesses.
+To see why this is necessary,
+consider a basic block that first loads a pointer $p$ from memory
+and then de-references $p$.
+If the value of $p$ is too low (e.g. 0)
+or too high
+(i.e. bigger than the maximum memory that
+a user space program is allowed to addressed),
+then we will not be able to map the virtual page pointed by $p$.
+
+\textbf{Handling Subnormal Numbers}
+General speaking -- aside from division
+and specialized instructions such as \verb|sqrt|
+-- floating point instructions have constant timing
+except when input of the operations are subnormal numbers.
+In our experiments where we encountered subnormal numbers,
+floating point operations can be slowed down by up to 20x.
+To ``normalize'' our timing, we configured \verb|MXCSR| register
+to disable gradual underflow.
+
+\subsection{Deriving throughput from measurement}.
+The basic strategy one usually takes to measure basic block throughput
+is unrolling a basic block multiple times and divide the latency of the
+unrolled basic block by the unroll factor.
+Compared to running the basic block inside a loop,
+unrolling has an advantage in that the measurement is not polluted by
+the overhead incurred by looping.
+A typical unroll factor is 100\cite{ithemal,uops}.
+Such a high unroll factor can however incur significant
+L1-icache misses for large basic blocks
+(e.g. already unrolled inner-loop body of a GEMM kernel).
+The issue with unrolling naively is that,
+an unroll-factor small enough to fit the 
+unrolled basic block into instruction cache is on the other hand
+insufficient to hide the latency of the first few iterations.
+We thus adopted a different strategy to cope with large basic blocks.
+
+We unroll each basic block with two different unroll factors.
+These factors should be large enough 
+to warm-up the processor into steady state.
+We then measure the latency of the two unrolled basic blocks,
+calculate the difference in latency, and divide it 
+by difference of the unroll factors.
+The resulting number is the throughput of the basic block.
+Consider a processor that enters steady state
+after executing a basic block 10 iterations.
+We measure the latency of this basic block expanded with
+two unroll factors -- 10 and 20.
+Suppose the resulting latency is 120 and 200 respectively,
+we can then determine that the throughput of this basic block
+is $\frac{200-120}{20-10} = 8$ cycles per iteration.
+
+
+\begin{table}
+\begin{tabular}{
+|p{0.2\columnwidth}|p{0.18\columnwidth}|p{0.18\columnwidth}|p{0.18\columnwidth}|}
+\hline (Additional) Optimizations &
+Measured Throughput &
+L1 D-Cache Misses &
+L1 I-Cache Misses \\
+
+\hline
+None & Crashed & N/A & N/A \\
+
+\hline
+Page mapping & 6377.0 & 956 & 0 \\
+
+\hline
+Single physical page & 2273.7 & 0 & 0 \\
+
+\hline
+Disabling gradual underflow & 65.0 & 0 & 35 \\
+
+\hline
+Using smaller unroll factor & 59.0 & 0 & 0\\
+
+\hline
+\end{tabular}
+\\
+\caption{Measured throughput for a sample basic block when
+different measurement optimizations are incrementally applied.
+The basic block is extracted from one of the critical 
+inner loop body of TensorFlow\cite{tensorflow}'s CNN training benchmark.}
+\label{tab:ablation}
+\end{table}

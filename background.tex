@@ -32,19 +32,56 @@ implemented as a deep neural network. Unlike aforementioned
 tools, Ithemal outputs a single throughput prediction for each
 input basic block without reporting an interpretable execution
 trace of the constituting instructions.
-Though potentially Ithemal can be a more acurate predictor
+Though potentially Ithemal can be a more accurate predictor
 due to its data-driven nature, the lack of a corresponding 
-trace makes it harder for performance engineers to pinpoint
-the bottleneck of their code.
+trace makes it harder for performance engineers to discover
+bottlenecks of their code.
 
+\subsection{Measurement Tools}
 Abel and Reineke\cite{uops} recently published their methodology
 to reverse engineer the detailed mapping of micro-ops
 from each instruction to the execution ports combination
-that they can use. Using this mapping, they are able to compute the 
-throughput of individual instructions.
+that they can use. They infer the steady state scheduling of constituent
+micro-ops for an instruction and calculate the instruction throughput based
+the inferred schedule.
+
+Agner Fog\cite{agner} provides an instruction table detailing the throughput,
+latency, port usage, etc for instructions in various x86 microarchitectures.
+This table, as pointed out by Abel and Reineke\cite{uops}, is incomplete and at times 
+imprecise. 
+
+Although in general it is possible to estimate the throughput of 
+a basic block by inferring the scheduling of its instructions based on their
+port usage -- this is the approach taken by llvm-mca and OSACA\cite{osaca},
+this approach is incomplete as it does not take microarchitectural
+optimizations that could alters the ``normal'' execution paths into account. 
+Examples of these optimizations include micro-op fusion and zero-idiom.
+For this reason, IACA\cite{iaca} is generally recognized as the more accurate analyzer
+compared to its alternatives such as llvm-mca since it can exploit
+private optimizations employed by Intel's processors.
+
+\subsection{Compiler Cost Models}
+Production compilers such as LLVM\cite{llvm} and GCC typically use cost models 
+to guide optimizations.
+Unlike ``user-facing'' models such as IACA or llvm-mca, these cost models typically
+model the costs at instruction level, rather than at whole basic block level.
+There are usually more than one cost models used inside these compilers.
+LLVM, for instance, uses at least three cost models: 
+one used to model instruction costs in its middle-end IR~\cite{llvm-cost};
+one to capture various information required to do instruction 
+(i.e. the scheduling model)~\cite{llvm-sched}, and this model is used by llvm-mca in addition
+to instruction scheduling;
+and one to model the cost of register uses in register allocation~\cite{llvm-reg}.
+GCC similarly employs analogous models~\cite{gcc-cost,gcc-sched}.
+Out of the aforementioned models, to our best knowledge, 
+LLVM's scheduling model is the only one exposed by an interface
+(in this case llvm-mca) for testing in isolation from their client optimizations.
+% TODO: can we make a stronger statement saying given our work, we think
+% other models should be exposed as well?
 
 \subsection{Validation Challenges}
 We briefly discuss the reasons behind the lack of validation for existing models.
+
 The challenge of doing such validation is two-fold:
 \begin{enumerate}
     \item \textbf{Coverage}.
@@ -57,13 +94,13 @@ The challenge of doing such validation is two-fold:
     weakness (or the lack of) in modelling the complex interaction of 
     individual instructions in modern hardware.
     
-    \item \textbf{Measuring the ground truth at scale}.
+    \item \textbf{Basic block profiling at scale}.
     The only way to get the actual performance of a code snippet is
     to execute it.
     A typical computing environment is noisy and can pollute measurements.
     One needs to be aware of the impact of interfering events such as
     multi-threading and context-switches.
-    Even more worse is the problem of automatically profiling 
+    Even worse is the problem of automatically profiling 
     \textit{arbitrary} code snippets involving memory accesses,
     which is unavoidable were one to reach the coverage required to
     overcome the first challenge.

@@ -12,7 +12,8 @@
 %\ajay{The lines till here sound a bit repetitive. We are not saying anything concrete here. All we are saying is microprocessors are complex}.
 %\ajay{Also, mentioning x86\_64 as an example is a bit misleading. Because we do only for x86\_64. We should start directly with - Modern x86\_64 employs}.
 %However, these cost models receive less attention than optimizations themselves.
-Modern x86 processors have complex performance characteristics.
+Modern x86 processors have complex performance characteristics due
+to micro-architectural optimizations such as out-of-order executions and micro-op fusions.
 To reduce the complexity of optimizing for these processors,
 many optimization techniques, manual or automatic, use cost models
 to abstract away target machines.
@@ -21,8 +22,8 @@ There are known, sometimes significant issues of
 cost models in production compilers such as LLVM\cite{llvm} and machine code analyzers
 written by processor vendors themselves such as IACA\cite{iaca}.
 IACA has been shown in some cases to deviate from the measured throughput
-of a basic block of instructions by more than 100\%.
-Despite of this, there is no standard, systematic approach or tooling
+of a basic block of instructions by more than 2x.
+Despite this, there is no standard, systematic approach or tooling
 to perform validation and tuning of processor cost models.
 
 In this paper, we present the necessary tooling and a benchmark suite

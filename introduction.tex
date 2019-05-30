@@ -8,9 +8,9 @@ and of properly implementing micro-benchmark. Many compiler optimizations
 use cost models of one form or another:
 a typical automatic vectorizer, for instance,
 use one to estimate the cost of vector packing
-in the presence of irregular memory accesses;
+in the presence of irregular memory accesses~\cite{goslp};
 instruction schedulers uses one to model the latency
-and throughput of instructions.
+and throughput of instructions~\cite{llvm-sched,gcc-sched}.
 
 Cost models however often take a back seat to “actual” optimizations,
 despite the accuracy of former ensures the effectiveness of latter.
@@ -52,11 +52,11 @@ in addition to its primary purpose of model validation.
 \item We describe a fully automatic technique
 for measuring the throughput of basic blocks extracted 
 from raw binaries.
-This is much more than simply unrolling a basic block
-and measure the latency,
+This is much more than simply measuring the latency of an unrolled basic block
 since code snippets with memory accesses (and most do)
 generally cannot be executed safely
 outside of the context of their source applications.
+We have used this technique to profile the throughput of more than 2 million basic blocks.
 Our methodology, when implemented, is accurate and fast.
 Depends on the context -- 
 if a developer is only interested in the performance of a code snippet
