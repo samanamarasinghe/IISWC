@@ -37,30 +37,6 @@ due to its data-driven nature, the lack of a corresponding
 trace makes it harder for performance engineers to discover
 bottlenecks of their code.
 
-\subsection{Measurement Tools}
-Abel and Reineke\cite{uops} recently published their methodology
-to reverse engineer the detailed mapping of micro-ops
-from each instruction to the execution ports combination
-that they can use. They infer the steady state scheduling of constituent
-micro-ops for an instruction and calculate the instruction throughput based
-the inferred schedule.
-
-Agner Fog\cite{agner} provides an instruction table detailing the throughput,
-latency, port usage, etc for instructions in various x86 microarchitectures.
-This table, as pointed out by Abel and Reineke\cite{uops}, is incomplete and at times 
-imprecise. 
-
-Although in general it is possible to estimate the throughput of 
-a basic block by inferring the scheduling of its instructions based on their
-port usage -- this is the approach taken by llvm-mca and OSACA\cite{osaca},
-this approach is incomplete as it does not take microarchitectural
-optimizations that could alters the ``normal'' execution paths into account. 
-Examples of these optimizations include micro-op fusion and zero-idiom.
-For this reason, IACA\cite{iaca} is generally recognized as the more accurate analyzer
-compared to its alternatives such as llvm-mca since it can exploit
-private optimizations employed by Intel's processors.
-
-\subsection{Compiler Cost Models}
 Production compilers such as LLVM\cite{llvm} and GCC typically use cost models 
 to guide optimizations.
 Unlike ``user-facing'' models such as IACA or llvm-mca, these cost models typically
@@ -79,32 +55,39 @@ LLVM's scheduling model is the only one exposed by an interface
 % TODO: can we make a stronger statement saying given our work, we think
 % other models should be exposed as well?
 
-\subsection{Validation Challenges}
-We briefly discuss the reasons behind the lack of validation for existing models.
+\subsection{Measurement Tools}
+Abel and Reineke\cite{uops} recently published their methodology
+to reverse engineer the detailed mapping of micro-ops
+from each instruction to the execution ports combination
+that they can use.
+They build this mapping using automatically generate micro-benchmarks.
+Using this mapping, they infer the steady state scheduling of constituent
+micro-ops for an instruction and calculate the instruction throughput based
+the inferred schedule.
 
-The challenge of doing such validation is two-fold:
-\begin{enumerate}
-    \item \textbf{Coverage}.
-    Modern architectures contains various optimizations --
-    such as zero-idiom and micro-op fusion.
-    Some of these optimizations are not documented.
-    To validate performance models effectively, one would need to take 
-    these optimization into account.
-    A wide range of code sequences are needed to reveal a predictor's 
-    weakness (or the lack of) in modelling the complex interaction of 
-    individual instructions in modern hardware.
-    
-    \item \textbf{Basic block profiling at scale}.
-    The only way to get the actual performance of a code snippet is
-    to execute it.
-    A typical computing environment is noisy and can pollute measurements.
-    One needs to be aware of the impact of interfering events such as
-    multi-threading and context-switches.
-    Even worse is the problem of automatically profiling 
-    \textit{arbitrary} code snippets involving memory accesses,
-    which is unavoidable were one to reach the coverage required to
-    overcome the first challenge.
-\end{enumerate}
+Agner Fog\cite{agner} provides a script to profile small code snippets.
+The script reports the number of cycles as well as performance statistics such as 
+the number of cache misses.
+The script expects the user to setup required benchmarking dependency such as 
+memory locations that could be accessed by the code to be profiled.
+
+\subsection{Existing Validation Sources}
+Intel's manual\cite{intel-manual} provides throughput and latency for frequently used instructions.
+Google's Exegesis project~\cite{exegesis} provides a tool that can automatically extract
+machine readable instruction information from Intel's manual.
+Agner Fog\cite{agner} similarly provides a table of insruction throughput and latency.
+
+Theses sources of per-instruction information are incomplete and sometimes inacurate~\cite{uops}. 
+More importantly, they does not lend directly to validating performance model at basic block level or more.
+Although in general it is possible to estimate the throughput of 
+a basic block by inferring the scheduling of its instructions based on their
+port usage -- this is the approach taken by llvm-mca and OSACA\cite{osaca},
+this approach is incomplete as it does not take microarchitectural
+optimizations that could alters the ``normal'' execution paths into account. 
+Examples of these optimizations include micro-op fusion and zero-idiom.
+For this reason, IACA\cite{iaca} is generally recognized as the more accurate analyzer
+compared to its alternatives such as llvm-mca since it can exploit
+private optimizations employed by Intel's processors.
 
 
 % TODO:

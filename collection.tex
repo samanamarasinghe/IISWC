@@ -1,4 +1,13 @@
 \section{Basic Block Collection and Classification}
+Modern architectures contains various optimizations --
+such as zero-idiom and micro-op fusion.
+Some of these optimizations are not documented.
+To validate performance models effectively, one would need to take 
+these optimization into account.
+A wide range of code sequences are needed to reveal a predictor's 
+weakness (or the lack of) in modelling the complex interaction of 
+individual instructions in modern hardware.
+    
 \subsection{Basic Block Collection}
 We selected the source applications of our basic blocks with two goals:
 \begin{enumerate*}
@@ -100,7 +109,7 @@ cryptographic kernels).
 The first mode complements the second,
 because weighted errors can be less informing 
 for applications dominated by a few basic blocks
-(i.e. Eigen, Tensorflow, and GZip).
+(i.e. Eigen, Tensorflow, and Gzip).
 
 
 \textbf{Per-application error}
@@ -145,7 +154,7 @@ the total number of micro-ops.
 
 After obtaining vector representation for the basic blocks, 
 we used Latent Dirichlet Allocation (LDA)~\cite{lda} to categorize the basic blocks.
-Our analysis shows that there are 9 categories of basic blocks.
+Our analysis shows that there are 8 categories of basic blocks.
 Table~\ref{tab:categories} gives a brief summary of the superficial characteristics
 of each category; as the summary suggests, our clustering has semantic significance.
 Figure\ref{fig:apps_vs_clusters} shows the breakdown of each applications

@@ -38,32 +38,31 @@ and appears to have been implemented before the cost of
 scalarization was being realistically accounted for...
 \end{quote}
 
-We describe a benchmark for validating performance models
-of x86 basic blocks.
-In this work we focus on throughput prediction.
-We make the following contributions:
-\begin{enumerate}
-\item We collected basic blocks from a wide range of domains.
-This data set, together with additional profile information we collected,
-can be used to design and validate low level optimizations
-such as backend peephole optimizers,
-in addition to its primary purpose of model validation.
-
-\item We describe a fully automatic technique
-for measuring the throughput of basic blocks extracted 
-from raw binaries.
+While there have been multiple efforts~\cite{agner,uops,exegesis} to measure per-instruction
+statistics for x86-64 -- for performance model tuning and optimization --
+there has been no analogous dataset for (or beyond) basic block throughput,
+which cannot be computed directly given even perfect modelling of individual instructions,
+due to microarchitectural optimizations such as out-of-order executions and macro-op fusion.
+One of the challenges of curating and profiling a set of basic blocks diverse enough to
+uncover the intricacies of modern x86-64 processors is automatically profiling arbitrary
+basic blocks.
 This is much more than simply measuring the latency of an unrolled basic block
 since code snippets with memory accesses (and most do)
 generally cannot be executed safely
 outside of the context of their source applications.
-We have used this technique to profile the throughput of more than 2 million basic blocks.
-Our methodology, when implemented, is accurate and fast.
-Depends on the context -- 
-if a developer is only interested in the performance of a code snippet
-but not how constituent instructions contribute to the final
-throughput -- our tool outperforms IACA in both speed and accuracy.
 
-\item We automatically classified the basic blocks
+We describe a benchmark for validating performance models
+of x86 basic blocks.
+In this work we focus on throughput prediction.
+We make the following contributions:
+\begin{itemize}
+\item We describe a fully automatic technique
+for measuring the throughput arbitrary of basic blocks extracted 
+from raw binaries.
+We have used this technique to profile the throughput of more than 2 million basic blocks.
+
+\item We collected basic blocks from a wide range of domains.
+We automatically classified the basic blocks
 by their usage of different execution ports.
 This classification allows developers to pinpoint weakness
 of their performance models.
@@ -81,6 +80,4 @@ e.g. we show that all such tools
 have average error higher than 30\% 
 when used to analyze numerical kernels running on Haswell machines.
 
-
-
-\end{enumerate}
+\end{itemize}

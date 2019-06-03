@@ -13,7 +13,7 @@
 %\ajay{Also, mentioning x86\_64 as an example is a bit misleading. Because we do only for x86\_64. We should start directly with - Modern x86\_64 employs}.
 %However, these cost models receive less attention than optimizations themselves.
 Modern x86 processors have complex performance characteristics due
-to micro-architectural optimizations such as out-of-order executions and micro-op fusions.
+to micro-architectural optimizations such as \chcomment{pipelining, super-scalar,} out-of-order executions and micro-op fusions.
 To reduce the complexity of optimizing for these processors,
 many optimization techniques, manual or automatic, use cost models
 to abstract away target machines.
@@ -28,11 +28,11 @@ to perform validation and tuning of processor cost models.
 
 In this paper, we present the necessary tooling and a benchmark suite
 for validating and tuning cost models of x86-64 basic blocks.
-Our benchmark suite contains more than 300,000
+Our benchmark suite contains more than 300,000 \chcomment{should have the number for the entire suite}
 basic blocks extracted from a wide range of applications.
 We describe our throughput profiling tool
 that automatically and accurately profiles the throughput
-of these basic blocks. We analyze the benchmark suite and show how and where popular
+of these basic blocks. \chcomment{Something on how hard measurement is?} We analyze the benchmark suite and show how and where popular
 cost models used by static predictors such as llvm-mca, IACA, Ithemal and
 OSACA\cite{osaca} deviate from the ground truth measured data.
 We show that in certain classes of basic blocks

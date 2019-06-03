@@ -14,8 +14,16 @@
 \usepackage{algpseudocode}
 \usepackage{url}
 
+% don't use all cap for algorithmic 
+\algrenewcommand\textproc{}
+
 \newcommand\hl[1]{\colorbox{red!10}{#1}}
 \newcommand{\ajay}[1]{{\color{magenta} {\bf Ajay:} #1}}
+\definecolor{xxxcolor}{rgb}{0.8,0,0}
+\definecolor{maroon}{RGB}{128,0,64}
+\definecolor{darkgreen}{RGB}{0,128,64}
+\newcommand{\ignore}[1]{}
+\newcommand{\chcomment}[1]{{\color{xxxcolor}{[}\emph{#1}{]}}}
 
 %%%%%%%%%% use lower capse for table caption
 \usepackage{etoolbox}

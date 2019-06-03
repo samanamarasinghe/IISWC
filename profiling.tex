@@ -1,5 +1,4 @@
 \section{Basic Block Profiling}
-
 \subsection{Measurement Guarantees}
 We now describe our approach to profiling basic block thoughput.
 We use IACA's definition of throughput, i.e. 
@@ -140,7 +139,7 @@ This approach however is not likely to produce a satisfying measurement
 for our example.
 In our example,
 because of the hardcoded offset -- \verb|0x4110a|,
-the rewriting scheme can reliably prevent crashes only when the pre-allocated array
+the rewriting scheme can only reliably prevent crashes when the pre-allocated array
 is bigger than 260 kilobytes, much bigger than the L1-caches of existing microarchitectures.
 Additionally, this approach has several issues:
 \begin{itemize}
@@ -221,23 +220,32 @@ floating point operations can be slowed down by up to 20x.
 To ``normalize'' our timing, we configured \verb|MXCSR| register
 to disable gradual underflow.
 
-\subsection{Deriving throughput from measurement}.
+\subsection{Deriving throughput from measurement}
 The basic strategy one usually takes to measure basic block throughput
 is unrolling a basic block multiple times and divide the latency of the
 unrolled basic block by the unroll factor.
+The formula for estimating the throughput using this approach is shown
+in equation~\ref{eq:naive}, where is $u$ is a large unroll factor
+and $\mathit{latency}(b,u)$ is the latency of basic block $b$
+unrolled $u$ times.
+\begin{equation}
+\mathit{throughput}(b) \approx \frac{\mathit{latency}(b,u)}{u}
+\label{eq:naive}
+\end{equation}
 Compared to running the basic block inside a loop,
 unrolling has an advantage in that the measurement is not polluted by
-the overhead incurred by looping.
+overhead incurred by looping.
 A typical unroll factor is 100\cite{ithemal,uops}.
 Such a high unroll factor can however incur significant
 L1-icache misses for large basic blocks
 (e.g. already unrolled inner-loop body of a GEMM kernel).
+
 The issue with unrolling naively is that,
 an unroll-factor small enough to fit the 
 unrolled basic block into instruction cache is on the other hand
 insufficient to hide the latency of the first few iterations.
 We thus adopted a different strategy to cope with large basic blocks.
-
+Equation~\ref{eq:new} shows the formula we use to estimate throughput.
 We unroll each basic block with two different unroll factors.
 These factors should be large enough 
 to warm-up the processor into steady state.
@@ -245,14 +253,29 @@ We then measure the latency of the two unrolled basic blocks,
 calculate the difference in latency, and divide it 
 by difference of the unroll factors.
 The resulting number is the throughput of the basic block.
-Consider a processor that enters steady state
-after executing a basic block 10 iterations.
-We measure the latency of this basic block expanded with
-two unroll factors -- 10 and 20.
-Suppose the resulting latency is 120 and 200 respectively,
-we can then determine that the throughput of this basic block
-is $\frac{200-120}{20-10} = 8$ cycles per iteration.
 
+\begin{equation}
+\mathit{throughput}(b) \approx 
+\frac{\mathit{latency}(b, u) - \mathit{latency}(b, u')}{ u - u' }
+\label{eq:new}
+\end{equation}
+
+Using this new formula allows us to  profile basic blocks with much
+smaller unroll factors,
+which is essential to profiling basic blocks that 
+are too large to fit in the instruction cache otherwise.
+Such basic blocks typically show up in numerical kernels where
+the inner loop of hot loops are unrolled.
+
+A natural question to ask is: are all of the techniques we discuss
+here necessary to obtain the ground truth throughput?
+Table~\ref{tab:ablation} shows the effect of incrementally applying
+aforementioned techniques to measure a basic block sampled from 
+TensorFlow~\cite{tensorflow}'s CNN training benchmark.
+As demonstrated, without some of the described techniques,
+the results vary from obtaining no throughput due to crashes or
+estimations that are two orders of magnitude away from the 
+actual throughput.
 
 \begin{table}
 \begin{tabular}{

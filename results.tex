@@ -46,16 +46,16 @@ having less time updating the cost models for the relatively new microarchitectu
 Ithemal is also considerably better than other models at modelling basic blocks with memory dependence,
 as demonstrated by its errors on predicting basic blocks from categories 4 and 8.
 We discussed ithemal's underformance on vectorized basic blocks with the authors of Ithemal, who suggested that the inconsistency
-was a result of imbalance in the training dataset;
+was a result of imbalance in their training dataset;
 the majority of which, similar to our data set, consists of non-vectorized basic blocks.
-In addition, authors of Ithemal reported having to leave more basic blocks out of the training of their
+In addition, the authors of Ithemal reported having to leave more basic blocks out of the training of their
 Skylake model due to lack of reliable throughput measurements.
 % TODO comapre error to basic block length and show ithemal does not generalize to large baisc blocks
 
 \textbf{OSACA}\cite{osaca} generally has higher errors compared to other models.
 We note that this might have less to do with OSACA's methodology than the engineering of its instruction parser.
 During our evaluations, we found and reported five bugs related to OSACA's instruction parser.
-In particular, OSACA does not recognize several instruction forms such;
+In particular, OSACA does not recognize several instruction forms;
 depends on the cases, it either crashes or treats unrecognized instruction forms as nops.
 One such instruction form is any instruction that reads an immediate operand and writes to memory
 (e.g. \verb|add [rbx], 1|), and OSACA treats these instructions as nops, thus under-reporting the throughput of
