@@ -47,9 +47,14 @@ One of the challenges of curating and profiling a set of basic blocks diverse en
 uncover the intricacies of modern x86-64 processors is automatically profiling arbitrary
 basic blocks.
 This is much more than simply measuring the latency of an unrolled basic block
-since code snippets with memory accesses (and most do)
+since code snippets with memory accesses (and most are)
 generally cannot be executed safely
 outside of the context of their source applications.
+Our ablation study %TODO: show graphs of ablation study and forward reference itt
+We used several techniques to ensure accurate profiling of basic blocks out-of-context,
+and our ablation study shows that, without these techniques,
+a substantial amount of these basic blocks either simply cannot be profiled due to crashing
+or are significantly mis-profiled due to issues such as cache misses and floating point gradual underflow.
 
 We describe a benchmark for validating performance models
 of x86 basic blocks.

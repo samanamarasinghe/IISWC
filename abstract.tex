@@ -30,9 +30,12 @@ In this paper, we present the necessary tooling and a benchmark suite
 for validating and tuning cost models of x86-64 basic blocks.
 Our benchmark suite contains more than 300,000 \chcomment{should have the number for the entire suite}
 basic blocks extracted from a wide range of applications.
-We describe our throughput profiling tool
-that automatically and accurately profiles the throughput
-of these basic blocks. \chcomment{Something on how hard measurement is?} We analyze the benchmark suite and show how and where popular
+We describe our techniques to profile arbitrary basic blocks automatically and accurately;
+which entails much more than simply measuring the latency of an unrolled basic blocks;
+in fact our ablation study shows that the profiling \textit{without} some of our measures
+ranges from crashing to obtaining results that are orders of magnitude away from the ground truth.\chcomment{
+Something on how hard measurement is?}
+We analyze the benchmark suite and show how and where popular
 cost models used by static predictors such as llvm-mca, IACA, Ithemal and
 OSACA\cite{osaca} deviate from the ground truth measured data.
 We show that in certain classes of basic blocks

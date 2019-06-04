@@ -226,10 +226,10 @@ is unrolling a basic block multiple times and divide the latency of the
 unrolled basic block by the unroll factor.
 The formula for estimating the throughput using this approach is shown
 in equation~\ref{eq:naive}, where is $u$ is a large unroll factor
-and $\mathit{latency}(b,u)$ is the latency of basic block $b$
+and $\mathit{cycles}(b,u)$ is the number of cycles taken to execute basic block $b$
 unrolled $u$ times.
 \begin{equation}
-\mathit{throughput}(b) \approx \frac{\mathit{latency}(b,u)}{u}
+\mathit{throughput}(b) \approx \frac{u}{\mathit{cycles}(b,u)}
 \label{eq:naive}
 \end{equation}
 Compared to running the basic block inside a loop,
@@ -238,7 +238,7 @@ overhead incurred by looping.
 A typical unroll factor is 100\cite{ithemal,uops}.
 Such a high unroll factor can however incur significant
 L1-icache misses for large basic blocks
-(e.g. already unrolled inner-loop body of a GEMM kernel).
+(e.g. the already unrolled inner-loop body of a GEMM kernel).
 
 The issue with unrolling naively is that,
 an unroll-factor small enough to fit the 
@@ -253,19 +253,32 @@ We then measure the latency of the two unrolled basic blocks,
 calculate the difference in latency, and divide it 
 by difference of the unroll factors.
 The resulting number is the throughput of the basic block.
-
 \begin{equation}
 \mathit{throughput}(b) \approx 
-\frac{\mathit{latency}(b, u) - \mathit{latency}(b, u')}{ u - u' }
+\frac{u-u'}{\mathit{cycles}(b, u) - \mathit{cycles}(b, u')}
 \label{eq:new}
 \end{equation}
 
-Using this new formula allows us to  profile basic blocks with much
-smaller unroll factors,
-which is essential to profiling basic blocks that 
-are too large to fit in the instruction cache otherwise.
+\begin{equation}
+\mathit{cycles}(b, u') \approx 
+\mathit{cycles}(b, u) + \frac{u'-u}{\mathit{throughput(b)}}
+\label{eq:new-rearranged}
+\end{equation}
+Equation~\ref{eq:new} is an re-arrangement of equation~\ref{eq:new-rearranged},
+which is derived from the following observation:
+if unroll factors $u$ and $u'$ are large enough
+to get the processor into steady state,
+then the additional $u'-u$ (suppose $u' > u$) iterations can be processed at 
+the rate of steady state throughput.
+
+The only requirement for unroll factors $u$ and $u'$ in equation~\ref{eq:new}
+is that they are large enough to get the processor into steady state,
+while the unroll factor $u$ in equation~\ref{eq:new} has to be additionally
+large enough to amortize the cost of the first few iterations.
+Being able to profile with smaller unroll factors is essential
+for basic blocks that are too large to otherwise fit in the instruction cache.
 Such basic blocks typically show up in numerical kernels where
-the inner loop of hot loops are unrolled.
+some hot inner loops are unrolled.
 
 A natural question to ask is: are all of the techniques we discuss
 here necessary to obtain the ground truth throughput?
