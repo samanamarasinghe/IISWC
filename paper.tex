@@ -1,5 +1,5 @@
 \documentclass[conference]{IEEEtran}
-\IEEEoverridecommandlockouts
+%\IEEEoverridecommandlockouts
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
@@ -13,7 +13,9 @@
 \usepackage{verbatim}
 \usepackage{algpseudocode}
 \usepackage{url}
-
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{comment}
 % don't use all cap for algorithmic 
 \algrenewcommand\textproc{}
 
@@ -23,7 +25,7 @@
 \definecolor{maroon}{RGB}{128,0,64}
 \definecolor{darkgreen}{RGB}{0,128,64}
 \newcommand{\ignore}[1]{}
-\newcommand{\chcomment}[1]{{\color{xxxcolor}{[}\emph{#1}{]}}}
+\newcommand{\chcomment}[1]{{\color{xxxcolor} {\bf Charith: [}\emph{#1}{]}}}
 
 %%%%%%%%%% use lower capse for table caption
 \usepackage{etoolbox}
@@ -42,8 +44,7 @@
     
 \begin{document}
 
-\title{A Benchmark Suite for Validating x86 Performance Model\\
-}
+\title{A Benchmark Suite and Measurement Framework for Validating x86-64 Basic Block Cost Models}
 
 %\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
 %\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
@@ -54,6 +55,9 @@
 
 \maketitle
 
+\thispagestyle{plain}
+\pagestyle{plain}
+
 \input{abstract}
 \input{keywords}
 \input{introduction}
@@ -61,6 +65,7 @@
 \input{profiling}
 \input{collection}
 \input{results}
+\input{case-study}
 \input{conclusions}
 
 \bibliographystyle{ieeetr}

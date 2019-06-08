@@ -1,30 +1,30 @@
 \section{Background}
 
-\subsection{Existing Performance Model}
-IACA (Intel Architecture Code Analyzer) is a static analyzer
+\subsection{Existing Performance Models}
+IACA~\cite{iaca} (Intel Architecture Code Analyzer) is a static analyzer
 developed by Intel. It has support for Intel micro-architectures
 since Nehalem.
 Given a machine code snippet, IACA estimates the average number
-of cycles it cost to execute the given code in an infinite 
+of cycles it costs to execute the given code in an infinite 
 loop (i.e. the reverse throughput).
 Unlike its alternatives, IACA takes advantage of its knowledge
 of Intel's proprietary processor optimization
 -- such as zero-idioms and micro-op fusions -- to make better 
 predictions.
 
-llvm-mca is a similar tool inspired by IACA. 
+llvm-mca~\cite{llvm-mca} is a similar tool inspired by IACA. 
 It is implemented as an out-of-order super-scalar simulator,
 using parameters (e.g. instruction throughput)
 supplied by LLVM\cite{llvm}'s backend scheduling model.
 The reuse of scheduling model is an explicit design choice
 made to expose LLVM's cost model for testing.
-Thus the accuracy by llvm-mca has a bearing on the 
+Thus the accuracy of llvm-mca has a bearing on
 that of LLVM's scheduling model.
 
 OSACA\cite{osaca} is an analyzer developed as the open-source
 alternative to IACA. It is similar to llvm-mca in that
-it is implemented as a paramatrized out-of-order simulator
--- in this case the parameters comes from measured throughput
+it is implemented as a parametrized out-of-order simulator
+-- in this case the parameters come from measured throughput
 and latency data for individual instructions.
 
 Ithemal\cite{ithemal} is a basic block throughput predictor
@@ -32,59 +32,72 @@ implemented as a deep neural network. Unlike aforementioned
 tools, Ithemal outputs a single throughput prediction for each
 input basic block without reporting an interpretable execution
 trace of the constituting instructions.
-Though potentially Ithemal can be a more accurate predictor
-due to its data-driven nature, the lack of a corresponding 
+Potentially Ithemal can be a more accurate predictor
+due to its learning based techniques, but the lack of a corresponding 
 trace makes it harder for performance engineers to discover
-bottlenecks of their code.
+bottlenecks in their code.
 
 Production compilers such as LLVM\cite{llvm} and GCC typically use cost models 
 to guide optimizations.
 Unlike ``user-facing'' models such as IACA or llvm-mca, these cost models typically
 model the costs at instruction level, rather than at whole basic block level.
-There are usually more than one cost models used inside these compilers.
-LLVM, for instance, uses at least three cost models: 
+There are usually multiple cost models used inside these compilers.
+LLVM, for instance uses at least three cost models: 
 one used to model instruction costs in its middle-end IR~\cite{llvm-cost};
-one to capture various information required to do instruction 
-(i.e. the scheduling model)~\cite{llvm-sched}, and this model is used by llvm-mca in addition
-to instruction scheduling;
-and one to model the cost of register uses in register allocation~\cite{llvm-reg}.
+second used to capture the information required for instruction scheduling 
+(i.e. the scheduling model~\cite{llvm-sched}, also used by llvm-mca);
+and the third used to model the cost of register uses in register allocation~\cite{llvm-reg}.
 GCC similarly employs analogous models~\cite{gcc-cost,gcc-sched}.
 Out of the aforementioned models, to our best knowledge, 
 LLVM's scheduling model is the only one exposed by an interface
-(in this case llvm-mca) for testing in isolation from their client optimizations.
+(in this case llvm-mca) for testing in isolation from its client optimizations.
 % TODO: can we make a stronger statement saying given our work, we think
 % other models should be exposed as well?
+
+All aforementioned cost models makes the following assumptions about the execution context
+of the code they are modelling
+\begin{itemize}
+    \item All memory accesses hit the L1-cache.
+    \item All instructions reside in instruction cache.
+    \item The execution is unaffected by context switches and interrupts.
+\end{itemize}
 
 \subsection{Measurement Tools}
 Abel and Reineke\cite{uops} recently published their methodology
 to reverse engineer the detailed mapping of micro-ops
-from each instruction to the execution ports combination
-that they can use.
-They build this mapping using automatically generate micro-benchmarks.
+from each instruction to the execution port combination
+that these micro-ops can use.
+
+They build this mapping using automatically generated micro-benchmarks.
 Using this mapping, they infer the steady state scheduling of constituent
-micro-ops for an instruction and calculate the instruction throughput based
-the inferred schedule.
+micro-ops for an instruction and calculate the instruction throughput based on
+this inferred schedule.
 
 Agner Fog\cite{agner} provides a script to profile small code snippets.
 The script reports the number of cycles as well as performance statistics such as 
 the number of cache misses.
-The script expects the user to setup required benchmarking dependency such as 
+The script expects the user to setup required benchmarking dependencies such as 
 memory locations that could be accessed by the code to be profiled.
 
 \subsection{Existing Validation Sources}
 Intel's manual\cite{intel-manual} provides throughput and latency for frequently used instructions.
-Google's Exegesis project~\cite{exegesis} provides a tool that can automatically extract
-machine readable instruction information from Intel's manual.
 Agner Fog\cite{agner} similarly provides a table of insruction throughput and latency.
+Google's EXEgesis team~\cite{exegesis} provides a tool that can automatically extract
+machine readable instruction specifications from Intel's manual.
+llvm-exegesis, designed by the same team, is a tool that determines
+the latency of an input instruction opcode\footnote{
+Currently the tool is limited to instructions that does not touch memory or floating point registers} 
+by automatically generating a micro-benchmark that measures the opcode's average latency;
+the tool is used to validate to LLVM's scheduling model.
 
-Theses sources of per-instruction information are incomplete and sometimes inacurate~\cite{uops}. 
-More importantly, they does not lend directly to validating performance model at basic block level or more.
+Theses sources of per-instruction information are incomplete and sometimes inaccurate~\cite{uops}. 
+More importantly, they do not lend directly to validating performance model at basic block level or more.
 Although in general it is possible to estimate the throughput of 
 a basic block by inferring the scheduling of its instructions based on their
-port usage -- this is the approach taken by llvm-mca and OSACA\cite{osaca},
-this approach is incomplete as it does not take microarchitectural
-optimizations that could alters the ``normal'' execution paths into account. 
-Examples of these optimizations include micro-op fusion and zero-idiom.
+port usage--this is the approach taken by llvm-mca~\cite{llvm-mca} and OSACA\cite{osaca}--this
+approach is incomplete as it does not take microarchitectural
+optimizations that could alter the ``normal'' execution paths into account. 
+Examples of these optimizations include micro-op fusion and zero-idioms.
 For this reason, IACA\cite{iaca} is generally recognized as the more accurate analyzer
 compared to its alternatives such as llvm-mca since it can exploit
 private optimizations employed by Intel's processors.

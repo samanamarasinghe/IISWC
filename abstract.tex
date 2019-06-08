@@ -13,14 +13,15 @@
 %\ajay{Also, mentioning x86\_64 as an example is a bit misleading. Because we do only for x86\_64. We should start directly with - Modern x86\_64 employs}.
 %However, these cost models receive less attention than optimizations themselves.
 Modern x86 processors have complex performance characteristics due
-to micro-architectural optimizations such as \chcomment{pipelining, super-scalar,} out-of-order executions and micro-op fusions.
+to micro-architectural optimizations such as pipelining, super-scalar and
+out-of-order execution, and micro-op fusion.
 To reduce the complexity of optimizing for these processors,
 many optimization techniques, manual or automatic, use cost models
 to abstract away target machines.
 Inaccurate models can cause misoptimizations.
 There are known, sometimes significant issues of
-cost models in production compilers such as LLVM\cite{llvm} and machine code analyzers
-written by processor vendors themselves such as IACA\cite{iaca}.
+cost models in production compilers such as LLVM
+and in vendor supplied machine code analyzers such as Intel's IACA.
 IACA has been shown in some cases to deviate from the measured throughput
 of a basic block of instructions by more than 2x.
 Despite this, there is no standard, systematic approach or tooling
@@ -28,16 +29,15 @@ to perform validation and tuning of processor cost models.
 
 In this paper, we present the necessary tooling and a benchmark suite
 for validating and tuning cost models of x86-64 basic blocks.
-Our benchmark suite contains more than 300,000 \chcomment{should have the number for the entire suite}
+Our benchmark suite contains more than 300,000 
 basic blocks extracted from a wide range of applications.
-We describe our techniques to profile arbitrary basic blocks automatically and accurately;
+We describe our techniques to profile arbitrary basic blocks automatically and accurately,
 which entails much more than simply measuring the latency of an unrolled basic blocks;
 in fact our ablation study shows that the profiling \textit{without} some of our measures
-ranges from crashing to obtaining results that are orders of magnitude away from the ground truth.\chcomment{
-Something on how hard measurement is?}
+ranges from crashing to obtaining results that are orders of magnitude away from the ground truth.
 We analyze the benchmark suite and show how and where popular
-cost models used by static predictors such as llvm-mca, IACA, Ithemal and
-OSACA\cite{osaca} deviate from the ground truth measured data.
+cost models such as llvm-mca, IACA, Ithemal and
+OSACA deviate from the measured throughput.
 We show that in certain classes of basic blocks
 (e.g. vectorized numerical kernels) even the most accurate
 model is on average more than 30\% away from the ground truth.

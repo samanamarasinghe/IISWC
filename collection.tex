@@ -1,19 +1,20 @@
 \section{Basic Block Collection and Classification}
-Modern architectures contains various optimizations --
-such as zero-idiom and micro-op fusion.
-Some of these optimizations are not documented.
-To validate performance models effectively, one would need to take 
-these optimization into account.
+Modern microarchitectures employ various optimizations:
+pipelining, super-scalar execution, dependency breaking zero-idioms, micro-op fusion, etc.
+Some of these optimizations are not documented and are proprietary.
+To validate performance models effectively, one would need to take
+all of these optimizations into account.
+
 A wide range of code sequences are needed to reveal a predictor's 
 weakness (or the lack of) in modelling the complex interaction of 
-individual instructions in modern hardware.
-    
+individual instructions in modern hardware. 
+
 \subsection{Basic Block Collection}
-We selected the source applications of our basic blocks with two goals:
+In this work, we selected the source applications of our basic blocks with two goals:
 \begin{enumerate*}
     \item The set of applications should cover a diverse range
-of domains to represent real world workload
-    \item Their basic blocks should reflect input that concerns typical users of a performance model;
+of domains to represent real world workloads
+    \item Their basic blocks should reflect usage that concerns typical users of a performance model;
     compiler developers deal with
     basic blocks from general purpose programs,
     which have different characteristics
@@ -23,36 +24,41 @@ of domains to represent real world workload
 Table~\ref{tab:apps} shows the applications from which we extracted basic blocks.
 
 \begin{table}
-\begin{tabular}{|p{0.4\columnwidth}|p{0.4\columnwidth}|}
+\begin{tabular}{|p{0.2\columnwidth}|p{0.3\columnwidth}|p{0.3\columnwidth}|}
 \hline
-Application & Domain \\
+\textbf{Application} & \textbf{Domain} & \textbf{\# Basic Blocks} \\
 
 \hline
-OpenBlas & Scientific Computing \\
+OpenBlas & Scientific Computing & 19032 \\
 
 \hline
-Redis & Database \\
+Redis & Database & 9343  \\
 
 \hline
-SQLite & Database \\
+SQLite & Database & 8871 \\
 
 \hline
-GZip & Compression \\
+GZip & Compression & 2272 \\
 
 \hline
-TensorFlow & Machine Learning \\
+TensorFlow & Machine Learning & 71988 \\
 
 \hline 
-Clang/LLVM & Compiler \\
+Clang/LLVM & Compiler & 212758 \\
 
 \hline
-Eigen & Scientific Computing \\
+Eigen & Scientific Computing & 4545 \\
 
 \hline
-Embree & Ray Tracing\\
+Embree & Ray Tracing & 12602 \\
 
 \hline
-FFmpeg & Multimedia\\
+FFmpeg & Multimedia & 17150 \\
+
+\hline
+\multicolumn{2}{|l|}{Total}  & 358561 \\
+
+
 \hline
 \end{tabular}
 \\
@@ -67,68 +73,44 @@ applications that are written in general purpose languages
 like C and C++.
 Basic blocks from these programs
 typically have high memory traffic, and are usually not-vectorized.
-We chose these applications because they are some of the mostly used
+We chose these applications because they are some of the most used
 applications today; they are well tuned for performance;
 and they all have sophisticated use of algorithms and data structures,
 giving us a large source of diverse basic blocks.
 
-We selected high performance kernels from the following domains:
-cryptography (OpenSSL), scientific computing (OpenBLAS and Eigen),
-machine learning (TensorFlow\cite{tensorflow}),
-and rendering/multimedia (Embree\cite{embree} and FFmpeg).
+Next, we selected following applications that use hand-optimized high performance kernels:
+OpenSSL~\cite{openssl} (cryptography), OpenBLAS~\cite{openblas}, Eigen~\cite{eigen} (scientific computing),
+TensorFlow\cite{tensorflow} (machine learning),
+Embree\cite{embree} (rendering), and FFmpeg (multimedia).
 OpenSSL, OpenBLAS, and FFmpeg use handwritten assembly for performance critical inner loops.
 Embree is written in ispc\cite{ispc}, a data parallel language
 designed specifically to target Intel's vector extensions.
 
 We collected basic blocks from these applications using
 a dynamic analysis implemented in DynamoRIO\cite{dynamorio},
-which provides an API to record every basic block
+which allows us to record every basic block
 executed at runtime.
 We opted for dynamic analysis rather than static disassembly
-because precise static disassembly of x86 binary
-is undecidable.
-We use the official benchmark suites of these applications\footnote{
+because precise static disassembly of x86 binaries
+is undecidable~\cite{disassembly-undecidable}.
+We discovered in our experiments cases where
+static disassemblers cannot distinguish padding bytes from instructions.
+We use the official benchmarking input of these applications\footnote{
 Except for FFmpeg and Gzip, which to the best of our knowledge do not have
 official benchmarks. For these two applications we use inputs
 from https://openbenchmarking.org.
-} to simulate realistic execution of these applications when performing
-the dynamic analysis.
+} to simulate realistic execution when recording the basic blocks.
 We evaluated Eigen on two sparse linear algebra workloads:
 sparse matrix-matrix multiplication (SPMM) and 
 sparse matrix-vector multiplication (SPMV).
 
 \subsection{Basic Block Classification}\label{classification}
-Our benchmark reports the accuracy of a performance model in two modes:
-\begin{enumerate*}
-\item Weighted error for each application.
-\item Average prediction error of different categories of 
-basic blocks (e.g. performance prediction
-of basic blocks in numerical kernels vs.
-cryptographic kernels).
-\end{enumerate*}
-The first mode complements the second,
-because weighted errors can be less informing 
-for applications dominated by a few basic blocks
-(i.e. Eigen, Tensorflow, and Gzip).
+We additionally classify the basic blocks by their use of processor resources.
+This classification, as shown in section~\ref{results},
+allows one to compare the prediction accuracy of different types of basic blocks 
+(e.g. numerical kernel vs bit-manipulation).
 
-
-\textbf{Per-application error}
-We collected program counter samples
-in our dynamic analysis.
-Using this information, we are able to weight each basic block by
-the approximate frequency with which it is executed during runtime.
-Weighting the basic blocks allows us to focus on basic blocks that have
-non-negligible effects on performance.
-Most basic blocks collected from TensorFlow\cite{tensorflow},
-for instance, are from infrequently executed code 
-such as the Python interpreter or glibc;
-weighting these basic blocks allows a user of the benchmark
-to see an evaluation the performance model relevant
-to the application's expected runtime cost.
-
-\textbf{Per-class error} 
-We automatically classify the basic blocks into
-to different categories.
+We classify the basic blocks as follows.
 The high-level approach we took was to first,
 \begin{enumerate*}
 \item map each basic block to a vector representation
@@ -142,62 +124,65 @@ For instance,
 the port-combination mapping for \verb|xor rax, rbx| in Haswell
 is $\{ p0156 \rightarrow 1 \}$ (using Abel and Reineke's notation);
 in other words, this instruction is implemented 
-with a micro-op that can be executed at port-0, 5, and 6.
-In Haswell, there are 13 such port combinations for all userland instructions.
-Accordingly, we create a 13-element vector for each instruction such that
-the $i'$th element denotes the number of micro-ops can be executed
-on the $i'$th port-combination.
-Similarly, we compute a 13-element vector for each basic block
-in our dataset by summing over the port-combination vectors
-of all instructions in the basic block and normalizing the vector by 
-the total number of micro-ops.
+with a micro-op that can be executed at port-0, 1, 5, and 6.
+In Haswell, there are 13 such port combinations for all user-level instructions.
 
-After obtaining vector representation for the basic blocks, 
-we used Latent Dirichlet Allocation (LDA)~\cite{lda} to categorize the basic blocks.
-Our analysis shows that there are 8 categories of basic blocks.
-Table~\ref{tab:categories} gives a brief summary of the superficial characteristics
-of each category; as the summary suggests, our clustering has semantic significance.
-Figure\ref{fig:apps_vs_clusters} shows the breakdown of each applications
-by the classification of its basic blocks.
+After translating each instruction to its micro-ops and port combinations, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}
+that assigns a category to each micro-op based on the micro-op's port combination and which basic block it is contained in.
+We performed \emph{Bayesian inference} to infer the category for each micro-op
+using SciKit Learn's default implementation of stochastic variational inference for LDA\cite{lda},
+with 6 categories and the parameter values $\alpha = 1/6$ and $\beta = 1/13$. 
+We then computed the most common category for each basic block, taking this to be the category of the basic block itself.
+Table~\ref{tab:categories} labels each category with which class of instructions it corresponds to.
+Note that LDA does not natively label the categories;
+we have manually labelled the categories by manual inspection.
+Figure~\ref{fig:examples} shows an example basic blocks for each category.
+
+Figure~\ref{fig:apps_vs_clusters} shows the unique basic block category patterns for each application.
+As expected, applications with high performance numerical kernels such as TensorFlow and
+OpenBLAS spent most of time executing (partially) vectorized basic blocks.
+The majority of SQLite and LLVM's basic blocks are not vectorized.
+OpenSSL and Gzip have many bit-manipulation code, consistent with our analysis.
+
 \begin{table}
-\begin{tabular}{|p{0.15\columnwidth}|p{0.6\columnwidth}|p{0.1\columnwidth}|}
+    \centering
+\begin{tabular}{|p{0.2\columnwidth}|p{0.3\columnwidth}|p{0.3\columnwidth}|} 
     \hline
-    Category & Description & Size \\
+    \textbf{Category} & \textbf{Description} & \textbf{\# Basic Blocks}\\
     \hline
     
     Category-1 & 
-    ALU ops & 23176 \\
+    Mix of Scalar and Vectorized arithmetic & 7710 
+    \\
     \hline
     
     Category-2 &
-    Vector Instructions & 6779 \\
+    Purely Vector instructions & 1267
+    \\
     \hline
     
     Category-3 &
-    Loads mixed with ALU ops & 15619 \\
+    Mix of loads and stores & 58540 
+    \\
     \hline
     
     Category-4 &
-    Memory instructions dominated by stores & 103820 \\
+    Mostly stores & 55879 
+    \\
     \hline
     
     Category-5 &
-    ALU ops & 6031 \\
+    ALU ops sprinkled with loads and stores & 85208 
+    \\
     \hline
     
     Category-6 &
-    Memory instructions dominated by loads & 97954 \\
-    \hline
-    
-    Category-7 &
-    ALU ops & 54946 \\
-    \hline
-    
-    Category-8 &
-    Mix of loads and stores & 18262 \\
+    Mostly loads & 121412
+    \\
     \hline
 \end{tabular}
 \\
+~\\
 \caption{Description of basic block categories. Note that this is only a brief
 summary of artificial features of each cluster and is by no means a comprehensive
 breakdown of each category.}
@@ -205,16 +190,18 @@ breakdown of each category.}
 
 \end{table}
 
+\begin{figure}[th]
+\begin{center}
+\includegraphics[width=\columnwidth]{figures/examples.pdf}
+\caption{Example basic blocks for each category identified in Table~\ref{tab:categories}}
+\label{fig:examples}
+\end{center}
+\end{figure}
+
 % TODO: get a NICER figure
 \begin{figure*}[h]
 \includegraphics[width=\textwidth]{figures/apps-vs-clusters.pdf}
-\caption{Breakdown of applications by basic block classes.
-Y-axis represents the total weight of basic blocks
-in a given class.
-Category-2 contains vectorized basic blocks.
-Note that the breakdown of OpenBLAS can be surprising
-because the official benchmark contains
-unoptimized verification code that got included into
-our analysis}
+\caption{Breakdown of applications by basic block categories. The Y-axis is the percentage of basic blocks with the category specified on the X-axis. We define the category of a basic block as the most common category of micro-ops contained in the block.
+Category-2 contains vectorized basic blocks.}
 \label{fig:apps_vs_clusters}
 \end{figure*}

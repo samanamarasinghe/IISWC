@@ -1,88 +1,141 @@
-\section{Results}
+\section{Evaluation}
+We show the evaluation of four existing basic block-level
+performance models on three recent Intel microarchitecture:
+Ivy Bridge, Haswell, and Skylake. Furthermore we discuss a few basic blocks where most models
+mis-predict by more than 30\%.
 
-\subsection{Evaluation of Existing Models}
-We evaluated IACA, llvm-mca, Ithemal\cite{ithemal}, and OSACA\cite{osaca}
+For the Ivy Bridge measurements we used a server with the Intel(R) Xeon(R) CPU E5-2695 v2 CPU and 128 GBs of memory. 
+For the Haswell measurements we used a server with the Intel(R) Xeon(R) CPU E5-2680 v3 CPU and 128 GBs of memory. 
+Finally for the Skylake measurements we used a server with the Intel(R) Xeon(R) W-2123 CPU and 64 GBs of memory. 
+
+We evaluated IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca}, Ithemal\cite{ithemal}, and OSACA\cite{osaca}
 on three recent Intel microarchitectures: Ivy Bridge, Haswell, Skylake.
 Some basic blocks in our dataset contains AVX2 instructions, which are not supported in Ivy Bridge,
 and these basic blocks are not included in validation for Ivy Bridge.
+For IACA we used version 3.0 for Skylake and Haswell evaluations. Since this version discontinued support for Ivy Bridge, we used 2.0 instead.
+For llvm-mca, we used version 9.0.0. OSACA is currently under development and we took the latest version at the time of writing this paper. For Ithemal too, we contacted the authors and obtained the latest version from them. 
+
 We use relative error (i.e. absolute error of the predicted throughput normalized by the measured throughput)
 as the metric to measure inaccuracy.
-Table \ref{tab:overall} shows the unweighted average error
-of each model on different microarchitectures.
-% include ivb and skl
-Figures \ref{fig:ivb-app-err}, \ref{fig:hsw-app-err}, and \ref{fig:skl-app-err}
-show the breakdown of the errors by applications.
-Figure \ref{fig:ivb-cluster-err}, \ref{fig:hsw-cluster-err}, 
-and \ref{fig:skl-cluster-err} show the breakdown of the errors by basic block categories 
-(see \ref{classification} for details of basic blocks classification).
+We use error and relative error interchangeably in the rest of the paper.
+
+\subsection{Evaluation Metrics}\label{results}
+We report the prediction errors of the performance models in three different ways.
+
+\textbf{Overall error} This is the unweighted average error for all basic blocks.
+Table \ref{tab:overall} shows the overall error of each model on different microarchitectures.
 We note that the overall error of each model can be unrepresentative
 of its performance on a given domain.
-The discrepancy between these models' overall unweighted accuracy
-and that of specialized domains (e.g. numerical kernels) highlights
-the need of basic block classification and per-class error reporting.
 
-Generally speaking, basic blocks dominated by stores
+\textbf{Per-application error}
+For each application, we weight its basic blocks by their approximate
+dynamic execution frequency,
+and report the weighted average error.
+We obtain each basic block's dynamic frequency using sample-based profiling.
+Weighting the basic blocks allows us to focus on those that have
+non-negligible effects on performance.
+Most basic blocks collected from TensorFlow\cite{tensorflow},
+for instance, are from infrequently executed code 
+such as the Python interpreter or glibc;
+weighting these basic blocks allows a user of the benchmark
+to see an evaluation  of the performance model relevant
+to the application's expected runtime cost.
+Figures \ref{fig:ivb-app-err}, \ref{fig:hsw-app-err}, and \ref{fig:skl-app-err}
+show the breakdown of the errors by applications.
+
+\textbf{Per-category error} 
+We automatically classify the basic blocks into
+to different categories, as presented in Section~\ref{classification},
+and report the average error for each category.
+Using per-category error complements per-application error,
+because the weighted average error for an application can be less informing 
+when the application is dominated by a few basic blocks
+(i.e. Eigen, Tensorflow, and Gzip).
+Figure \ref{fig:ivb-cluster-err}, \ref{fig:hsw-cluster-err}, 
+and \ref{fig:skl-cluster-err} show the breakdown of the errors by basic block categories.
+
+The discrepancy between overall unweighted accuracy (Table ~\ref{tab:overall})
+and that of more specialized types of basic blocks
+such as vectorized code (Figures \ref{fig:ivb-cluster-err},
+\ref{fig:hsw-cluster-err},
+and \ref{fig:skl-cluster-err}) highlights
+the need of basic block classification and per-category error reporting.
+
+\subsection{Analysis}
+ We first analyze how accurate and stable each estimation method is considering all error metrics. Next, we analyze per-application and per-category errors on how they differ across various microarchitectures for different estimation methods.\\
+ 
+We analyze the performance of IACA, llvm-mca, Ithemal and OSACA.
+ 
+ \textbf{IACA}~\cite{iaca} is relatively more stable compared to other models that we evaluated.
+An interesting point to note is that IACA is consistently accurate on basic blocks from OpenSSL. 
+OpenSSL is a crypto library that is dominated by basic blocks containing vector and scalar operations
+(category-1) and IACA models these well. 
+
+    \textbf{llvm-mca}~\cite{llvm-mca} is considerably worse on all microarchitectures compared to IACA and Ithemal,
+especially on modelling basic blocks involving loads. Also, the per-application error increases on recent microarchitectures like Skylake and Haswell compared to Ivy Bridge.
+This degradation in performance over microarchitectures is because of the tool still using outdated models and parameters
+%We suspect the decrease in performance is a result of LLVM developers 
+%having less time to update the cost models for the relatively new microarchitectures. 
+
+\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks (e.g. category-2).
+Ithemal is also considerably better than other models at modelling basic blocks with memory dependence,
+as demonstrated by its errors on predicting basic blocks from categories 4 and 8.
+We discussed Ithemal's underperformance on vectorized basic blocks with the authors of Ithemal, who suggested that the inconsistency
+was a result of imbalance in their training dataset;
+the majority of which, similar to our data set, consists of non-vectorized basic blocks.
+
+\textbf{OSACA}\cite{osaca} is on average more accurate than llvm-mca but
+considerably less than IACA~\cite{iaca} and Ithemal~\cite{ithemal}.
+We note that this has less to do with OSACA's methodology than the engineering of its currently under developement instruction parser.
+During our evaluations, we found and reported five bugs related to OSACA's instruction parser.
+In particular, OSACA does not recognize several instruction forms;
+depending on the cases, it either crashes or treats unrecognized instruction forms as nops.
+One such instruction form is any instruction that reads an immediate operand and writes to memory
+(e.g. \verb|add $1, (rbx)|), and OSACA treats these instructions as nops, thus under-reporting the throughput of
+many basic blocks.
+
+
+\textbf{Per-application error.} It is seen that per-application error for Haswell microarchitecture is worse for all estimation methods and it is especially prominent in llvm-mca~\cite{llvm-mca}. Also, note that OpenBLAS has significantly worse performance on Skylake for all analytical prediction methods. OpenBLAS contains lot of vectorized numerical kernels. We hypothesize that vector implementations in Skylake are different from older generations and are not modelled properly by the analytical estimation tools. Ithemal shows worse yet  similar performance on all microarchitectures for OpenBLAS. This may be because of the distributional bias in the training data of Ithemal.
+
+\textbf{Per-category error.} Generally speaking, basic blocks dominated by stores
 (category-4) are easier to predict,
 while the throughput of basic blocks that mixes load instructions
-with other operations (e.g. category-8) are considerably
+with other operations (e.g. category-3) are considerably
 more difficult to predict -- the prediction error is on average more than
 twice higher than predicting basic blocks with only stores. 
 We surmise that this is due to weakness of existing analyzers to model 
 memory dependence.
 In addition to basic blocks with memory dependence,
-vectorized basic blocks (e.g. category-2) also causes high prediction errors.
+vectorized basic blocks (i.e. parts of category-1 and category-2) also causes high prediction errors.
 
 % TODO summarize error by applications
 
-\textbf{IACA}~\cite{iaca} is relatively more stable compared to other models that we evaluated.
-An interesting point to note is that IACA is consistently accurate on basic blocks from OpenSSL.
-
-\textbf{llvm-mca} is on par with IACA on Ivy Bridge and Haswell but considerably worse on Skylake,
-especially on modelling basic blocks involving basic arithmetic operations.
-We suspect the decrease in performance in Skylake is a result of LLVM developers 
-having less time updating the cost models for the relatively new microarchitecture.
-
-\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks (i.e. category-2).
-Ithemal is also considerably better than other models at modelling basic blocks with memory dependence,
-as demonstrated by its errors on predicting basic blocks from categories 4 and 8.
-We discussed ithemal's underformance on vectorized basic blocks with the authors of Ithemal, who suggested that the inconsistency
-was a result of imbalance in their training dataset;
-the majority of which, similar to our data set, consists of non-vectorized basic blocks.
-In addition, the authors of Ithemal reported having to leave more basic blocks out of the training of their
-Skylake model due to lack of reliable throughput measurements.
-% TODO comapre error to basic block length and show ithemal does not generalize to large baisc blocks
-
-\textbf{OSACA}\cite{osaca} generally has higher errors compared to other models.
-We note that this might have less to do with OSACA's methodology than the engineering of its instruction parser.
-During our evaluations, we found and reported five bugs related to OSACA's instruction parser.
-In particular, OSACA does not recognize several instruction forms;
-depends on the cases, it either crashes or treats unrecognized instruction forms as nops.
-One such instruction form is any instruction that reads an immediate operand and writes to memory
-(e.g. \verb|add [rbx], 1|), and OSACA treats these instructions as nops, thus under-reporting the throughput of
-many basic blocks.
 
 
 \begin{table}
-\begin{tabular}{|p{0.25\columnwidth}|p{0.3\columnwidth}|p{0.25\columnwidth}|}
+\begin{tabular}{|p{0.25\columnwidth}|p{0.35\columnwidth}|p{0.20\columnwidth}|}
 \hline
 
-Microarchitecture & Model & Average Error\\
+\textbf{Microarchitecture} & \textbf{Model} & \textbf{Average Error}\\
 \hline
 
 Ivy Bridge & IACA & 0.1693\\
-    & llvm-mca & 0.1885\\
+    & llvm-mca & 0.4260\\
+    & llvm-mca (rthroughput) & 0.1883 \\
     & Ithemal & 0.1180\\
     & OSACA & 0.3277\\
 \hline
 
 Haswell & IACA & 0.1798\\
-    & llvm-mca & 0.1832\\
+    & llvm-mca & 0.4163\\
+    & llvm-mca (rthroughput) & 0.1832 \\
     & Ithemal & 0.1253\\
     & OSACA & 0.3916\\
     
 \hline 
 Skylake & IACA & 0.1578\\
-    & llvm-mca & 0.2278\\
+    & llvm-mca & 0.4251\\
+    & llvm-mca (rthroughput) & 0.2272 \\
     & Ithemal & 0.1191\\
     & OSACA & 0.3768\\
 
@@ -94,9 +147,8 @@ Skylake & IACA & 0.1578\\
 \label{tab:overall}
 \end{table}
 
-\begin{figure}
-\includegraphics[width=\columnwidth]{figures/ivb-app-err.pdf}
-\caption{Per-application error for each model on Ivy Bridge;
+
+\begin{figure} \includegraphics[width=\columnwidth]{figures/ivb-app-err.pdf} \caption{Per-application error for each model on Ivy Bridge;
 error for each basic block is weighted by the frequency it is sampled during profiling.}
 \label{fig:ivb-app-err}
 \end{figure}
