@@ -4,8 +4,8 @@ These results are from Haswell.
 Table~\ref{tab:case-study} shows assembly of these basic blocks, their 
 measured throughput, and throughput predicted by different models.
 We manually inspected the instruction schedules predicted by the models
-(except for Ithemal predicts a single throughput).
-The first two examples highlights cases of some models' mis-prediction
+(except for Ithemal, which just predicts a single throughput number).
+The first two examples highlight cases of some models' mis-prediction
 contradicting instruction throughput specified by the manual.
 The last example shows a case where a model (llvm-mca~\cite{llvm-mca} in this case) can significantly
 mispredict throughput due to mis-scheduling, despite correct modeling of individual instructions.
@@ -15,8 +15,8 @@ We look at the first example in Table~\ref{tab:case-study},
 which is bottlenecked by a 64-bit by 32-bit unsigned division.
 Intel's manual~\cite{intel-manual} states that the throughput of such division
 ranges approximately from 20 to 26 cycles, which is consistent with our measurement (21.62).
-All models are wrong here; llvm-mca and IACA~\cite{iaca} significantly over-predicts;
-ithemal and OSACA~\cite{osaca} under-predicts.
+All models are wrong here; llvm-mca and IACA~\cite{iaca} significantly over-predict;
+Ithemal~\cite{ithemal} and OSACA~\cite{osaca} under-predict.
 llvm-mca and IACA's predictions indicate that they are confusing 
 this division (\verb|div %ecx|) with the 128-bit by 64-bit analog (\verb|div %rcx|),
 which the manual does specify to have variable latency between 80 and 95 cycles.
@@ -28,9 +28,9 @@ due to the fast-path for zeroed out \verb|%rdx|.
 \textbf{Modelling bug due to zero-idioms}.
 We look at the second example in Table~\ref{tab:case-study}.
 The basic block consists of a single vectorized XOR of \verb|%xmm2| with itself.
-All three micro-architectures we evaluated have fast-path for such zero-idiom.
-IACA and Ithemal recognize this idiom and makes predictions close to the measured throughput,
-while llvm-mca and OSACA treats this instruction as a regular vectorized XOR.
+All three micro-architectures we evaluated have fast-paths for such zero-idioms. 
+IACA and Ithemal recognize this idiom and make predictions close to the measured throughput,
+while llvm-mca and OSACA treat this instruction as a regular vectorized XOR.
 
 \textbf{Modeling bug due to mis-scheduling}
 The last example in Table~\ref{tab:case-study} is the same basic block

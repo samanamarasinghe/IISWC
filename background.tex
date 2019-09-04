@@ -1,6 +1,8 @@
 \section{Background}
 
 \subsection{Existing Performance Models}
+\label{sec:perf-models}
+
 IACA~\cite{iaca} (Intel Architecture Code Analyzer) is a static analyzer
 developed by Intel. It has support for Intel micro-architectures
 since Nehalem.
@@ -54,6 +56,9 @@ LLVM's scheduling model is the only one exposed by an interface
 % TODO: can we make a stronger statement saying given our work, we think
 % other models should be exposed as well?
 
+
+\vspace{1em}
+\noindent{\bf Modeling Assumptions.}
 All aforementioned cost models makes the following assumptions about the execution context
 of the code they are modelling
 \begin{itemize}

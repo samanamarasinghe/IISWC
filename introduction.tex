@@ -4,7 +4,7 @@
 
 Hardware performance models help programmers or compilers to 
 produce high performing code.
-For example, static machine code analyzers such as IACA~\cite{iaca} helps programmers
+For example, static machine code analyzers, such as IACA~\cite{iaca}, enable programmers
 to estimate the performance of short code sequences
 isolated from their source applications.
 Production compilers such as LLVM~\cite{llvm} use cost models to guide various optimizations such as instruction scheduling, loop
@@ -21,9 +21,9 @@ vectorization and SLP vectorization~\cite{slp} (to determine whether a particula
 %instruction schedulers use one to estimate the latency
 %and throughput of instructions~\cite{llvm-sched,gcc-sched}.
 
-Development and validation of cost models are often overlooked compared to actual optimizations,
-despite the fact that
-the accuracy of the former ensures the effectiveness of the latter.
+%The quality of a cost model is often overlooked compared to the implementation of an optimization,despite the fact that the accuracy of the former ensures the effectiveness of the latter.
+
+The quality of a cost model is instrumental to the success of a compiler optimization. 
 For instance, Mendis et al.\cite{goslp}
 have shown an optimal\footnote{
 With certain caveat.
@@ -35,8 +35,8 @@ their algorithm is optimal insofar as the cost model is able to accurately
 capture the target architectures.
 In some instances, their solutions incurred slowdowns due to inaccuracies of 
 the cost models.
-Hence, to make sure that compiler optimizations and performance engineers are properly guided,
-a well tuned cost model is of importance.
+Hence, to make sure that compiler optimizations and performance engineers are properly guided, it is critical to have 
+a well-tuned cost model.
 
 However, modern cost models are not developed systematically and are not properly validated.
 For example, parameters of these cost models 

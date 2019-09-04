@@ -56,13 +56,13 @@ Embree & Ray Tracing & 12602 \\
 FFmpeg & Multimedia & 17150 \\
 
 \hline
-\multicolumn{2}{|l|}{Total}  & 358561 \\
+\multicolumn{2}{|l|}{Total}  & 330018\\
 
 
 \hline
 \end{tabular}
 \\
-\caption{Source applications of basic blocks}
+\caption{Source applications of basic blocks. Note that the total doesn't add up because there are common basic blocks across applications. For example from statically linked libc and some common compiler generated patterns.}
 \label{tab:apps}
 \end{table}
 
@@ -82,7 +82,7 @@ Next, we selected following applications that use hand-optimized high performanc
 OpenSSL~\cite{openssl} (cryptography), OpenBLAS~\cite{openblas}, Eigen~\cite{eigen} (scientific computing),
 TensorFlow\cite{tensorflow} (machine learning),
 Embree\cite{embree} (rendering), and FFmpeg (multimedia).
-OpenSSL, OpenBLAS, and FFmpeg use handwritten assembly for performance critical inner loops.
+OpenSSL, OpenBLAS, and FFmpeg use handwritten assembly for performance-critical inner loops.
 Embree is written in ispc\cite{ispc}, a data parallel language
 designed specifically to target Intel's vector extensions.
 
@@ -113,30 +113,29 @@ allows one to compare the prediction accuracy of different types of basic blocks
 We classify the basic blocks as follows.
 The high-level approach we took was to first,
 \begin{enumerate*}
-\item map each basic block to a vector representation
-that reflects its usage of hardware resources,
-\item and then cluster the basic blocks by their vector representations.
+\item map each basic block to a representation
+that reflects its usage of hardware resources, and then
+\item cluster the basic blocks by their representations.
 \end{enumerate*}
 
 Using results from Abel and Reineke~\cite{uops},
 we compute a port-combination mapping for each instruction.
 For instance,
-the port-combination mapping for \verb|xor rax, rbx| in Haswell
+the port-combination mapping for \verb|xor %rax, %rbx| in Haswell
 is $\{ p0156 \rightarrow 1 \}$ (using Abel and Reineke's notation);
 in other words, this instruction is implemented 
 with a micro-op that can be executed at port-0, 1, 5, and 6.
 In Haswell, there are 13 such port combinations for all user-level instructions.
 
-After translating each instruction to its micro-ops and port combinations, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}
-that assigns a category to each micro-op based on the micro-op's port combination and which basic block it is contained in.
-We performed \emph{Bayesian inference} to infer the category for each micro-op
-using SciKit Learn's default implementation of stochastic variational inference for LDA\cite{lda},
+After translating each basic block to its micro-ops and port combinations, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}. A topic model in language processing assigns a topic to each word based on the word's frequency in a set of documents. In our context, words are micro-operations differentiated based on their port combinations, topics are categories, and documents are basic blocks. We therefore assign a category to each micro-operation based on its port-combination frequency in a set of basic blocks.
+To infer the category for each micro-op, we
+used SciKit Learn's default implementation of stochastic variational inference for LDA\cite{lda},
 with 6 categories and the parameter values $\alpha = 1/6$ and $\beta = 1/13$. 
 We then computed the most common category for each basic block, taking this to be the category of the basic block itself.
 Table~\ref{tab:categories} labels each category with which class of instructions it corresponds to.
 Note that LDA does not natively label the categories;
 we have manually labelled the categories by manual inspection.
-Figure~\ref{fig:examples} shows an example basic blocks for each category.
+Figure~\ref{fig:examples} shows example basic blocks for each category.
 
 Figure~\ref{fig:apps_vs_clusters} shows the unique basic block category patterns for each application.
 As expected, applications with high performance numerical kernels such as TensorFlow and

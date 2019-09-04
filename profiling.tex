@@ -4,7 +4,7 @@ is to measure the latency of $n$ unrolled copies of the basic block
 and divide that latency by $n$.
 One of the commonly used latency measurement tool is Agner Fog's measurement script~\cite{agner}.
 This script is straightforward. 
-It uses the core cycle counter to measure the latency of unrolled block and
+It uses the core cycle counter to measure the latency of an unrolled basic block and
 does not modify the basic block's execution context in any way.
 The first row of Table~\ref{tab:full-ablation} presents the results of applying
 this methodology to our benchmark suite. 
@@ -16,193 +16,30 @@ we are able to reproduce the measurement.
 } 16.65\% of our basic blocks.
 
 
-Our goal is to maximize the number of basic blocks that execute without crashing, subject to the constraint that their executions satisfy the performance model invariants.
+Our goal is to maximize the number of basic blocks that execute without crashing, subject to the constraint that their executions satisfy our performance modelling assumptions (Section~\ref{sec:perf-models}) .
 
 We first describe a technique to map all virtual memory pages accessed by a basic block
 to a single physical page before the execution of this basic block;
 this achieves two objectives: the basic blocks can then be executed without crashing,
-and all of the memory accesses hit L1 cache.
-This allows us to execute most basic blocks~\ref{tab:full-ablation}
-but does not guarantee the invariant that there is no instruction cache misses,
+and all of the memory accesses hit the L1 data cache.
+This allows us to execute most basic blocks (see Table~\ref{tab:full-ablation})
+but does not guarantee that there is no instruction cache
+miss (an assumption of all existing performance models),
 which can become an issue when one attempts to profile large basic blocks using
-the standard unrolling-based throughput profiling approach.
-In particular the issue with the standard approach is the unroll factor
-has to be large enough to hide the latency of 
-
-
-
-%We use this methodology as the baseline and compare it with three techniques.
-%\begin{enumerate}
-%    \item Naive memory mapping.
-%    
-%    This is an naive attempt to reduce the number of crashes due to segmentation faults.
-%    We try to allocate as much memory as possible in the hope that 
-%    a basic block only try to access the allocated memory.
-%    Since we want to avoid cache misses, we only allocate 32KB of memory (size of the L1 cache).
-%    We also initialize all general purpose registers to point to the allocated memory.
-%    
-%    \item Mapping all virtual pages accessed by a basic block to a single physical page 
-%    (while using identical initialization).
-%    
-%    This is our full solution to executing basic blocks with ``random'' memory traffic.
-%    We describe how we construct this mapping in more detail in Section~\ref{sec:mapping}.
-%    We are able to profile most basic blocks using this technique alone (90\%).
-%    
-%    \item More intelligent unrolling of basic blocks.
-%    
-%    This is our technique for profiling large basic blocks that could cache instruction cache misses
-%    if profiled naively.
-%    A common practice of basic block profiling is unrolling the basic block
-%    multiple times and measuring the latency of executing the unrolled code;
-%    We show that naively applying this technique to large basic blocks
-%    leads to mis-profiling by overflowing instruction cache,
-%    and we show how we are able to use smaller unroll factors that gives
-%    accurate throughput estimation.
-%\end{enumerate}
+the standard unrolling-based throughput profiling.
+In particular, the issue with the standard approach is that the unroll factor
+has to be large enough to hide the latency of the first and last few iterations,
+but such an unroll factor can cause instruction cache misses for large basic blocks,
+violating our modeling assumptions.
+We describe our technique to profile basic blocks with smaller
+unroll factors while providing accurate steady state throughput estimation.
+Table~\ref{tab:full-ablation} shows the percentage of basic blocks
+we are able to profile using these two techniques.
 
 We additionally discuss two rare events --
 gradual underflow of floating points and unaligned memory accesses -- 
 that can significantly affect profile fidelity;
 we avoid the former entirely and detect the occurrence of the latter.
-
-%Table~\ref{tab:ablation} shows the effect of incrementally applying
-%our techniques to measure a basic block sampled from 
-%TensorFlow~\cite{tensorflow}'s CNN training benchmark.
-%As demonstrated, without some of these techniques,
-%the results vary from obtaining no throughput due to crashes or
-%estimations that are two orders of magnitude away from the 
-%actual throughput.
-%
-%
-
-\begin{table}
-\begin{tabular}{
-|p{0.4\columnwidth}|p{0.45\columnwidth}|}
-\hline
-\textbf{(Additional) Technique} & \textbf{Percent of Basic Blocks Profiled} \\
-\hline
-None & 16.65\% \\
-
-\hline
-Mapping all accessed pages & 91.28\% \\
-
-\hline
-More intelligent unrolling & 94.24\% \\
-
-\hline
-\end{tabular}
-\\
-\caption{Ablation study showing the effect of incrementally applying our measurement techniques.}
-\label{tab:full-ablation}
-\end{table}
-
-
-\subsection{Deriving throughput from measurement}
-We use IACA's definition of throughput, i.e. 
-the average number of cycles required to execute a basic block 
-at steady state.
-\footnote{Note that this definition is the inverse of the textbook definition of throughput.}
-
-The basic strategy one usually takes to measure basic block throughput
-is unroll a basic block multiple times and divide the latency of the
-unrolled basic block by the unroll factor.
-The formula for estimating the throughput using this approach is shown
-in equation~\ref{eq:naive}, where $u$ is a large unroll factor
-and $\mathit{cycles}(b,u)$ is the number of cycles taken to execute basic block $b$
-unrolled $u$ times.
-\begin{equation}
-\mathit{throughput}(b) \approx \frac{\mathit{cycles}(b,u)}{u}
-\label{eq:naive}
-\end{equation}
-Compared to running the basic block inside a loop,
-unrolling has an advantage in that the measurement is not polluted by
-overhead incurred by looping.
-A typical unroll factor is 100\cite{ithemal,uops}.
-Such a high unroll factor can however incur significant
-L1-icache misses for large basic blocks
-(e.g. the already unrolled inner-loop body of a GEMM kernel).
-
-The issue with unrolling naively is that,
-an unroll-factor small enough to fit the 
-unrolled basic block into the instruction cache is 
-insufficient to hide the latency of the first few iterations.
-We thus adopted a different strategy to cope with large basic blocks.
-Equation~\ref{eq:new} shows the formula we use to estimate throughput.
-We unroll each basic block with two different unroll factors.
-These factors should be large enough 
-to warm-up the processor into steady state.
-We then measure the latency of the two unrolled basic blocks,
-calculate the difference in latency, and divide it 
-by difference of the unroll factors.
-The resulting number is the throughput of the basic block.
-\begin{equation}
-\mathit{throughput}(b) \approx 
-\frac{\mathit{cycles}(b, u) - \mathit{cycles}(b, u')}{u-u'}
-\label{eq:new}
-\end{equation}
-
-\begin{equation}
-\mathit{cycles}(b, u') \approx 
-\mathit{cycles}(b, u) + \frac{\mathit{throughput(b)}}{u'-u}
-\label{eq:new-rearranged}
-\end{equation}
-Equation~\ref{eq:new} is an re-arrangement of equation~\ref{eq:new-rearranged},
-which is derived from the following observation:
-if unroll factors $u$ and $u'$ are large enough
-to get the processor into steady state,
-then the additional $u'-u$ (suppose $u' > u$) iterations can be processed at 
-the rate of steady state throughput.
-
-The only requirement for unroll factors $u$ and $u'$ in equation~\ref{eq:new}
-is that they are large enough to get the processor into steady state,
-while the unroll factor $u$ in equation~\ref{eq:new} has to be additionally
-large enough to amortize the cost of the first few iterations.
-Being able to profile with smaller unroll factors is essential
-for basic blocks that are too large to otherwise fit in the instruction cache.
-Such basic blocks typically show up in numerical kernels where
-some hot inner loops are unrolled.
-
-
-\subsection{Measurement Invariants}\label{sec:invariants}
-We guarantee the following invariants for our measurements.
-\begin{enumerate*}
-    \item All memory accesses lead to an L1 data cache hit. 
-    \item Measurements should be free of interrupts, context switches,
-    and hyper-threading.
-\end{enumerate*}
-These are the same assumptions made by existing models;
-Admittedly many of the memory accesses in deployed programs do not hit L1 cache.
-We nonetheless make sure that during our measurement all memory accesses hit L1 cache 
-and for compatibility with existing models and for consistency:
-the throughput of these basic blocks (i.e. those with memory accesses)
-is inherently dependent on the program execution context.
-
-\textbf{Ensuring Measurement Invariants}.
-We monitor the following statistics, in addition to core cycle counts,
-during measurements.
-\begin{enumerate}
-    \item L1 Data Cache Read Misses
-    \item L1 Data Cache Write Misses
-    \item L1 Instruction Cache Misses
-    \item Context Switches
-\end{enumerate}
-We measure the cache misses with hardware performance counters, 
-and we use one of the system calls provided by Linux to track the number of context switches. 
-We discard a measurement
-if any of the aforementioned counters are non-zero.
-Each \textit{unrolled} basic block is timed 16 times by default,
-and we accept a basic block for further analysis only if the basic block has at least 
-8 \textit{clean}, identical timings.
-All basic blocks are measured in machines with hyper-threading disabled.
-We count the elapsed cycles by reading the core cycle counter.
-Unlike the reference cycle or time-stamp counter, the core cycle counter is invariant
-to performance scaling.
-We also try to ensure that most accesses will hit the L1 cache by mapping all virtual memory pages 
-accessed by a basic block to a single physical page. We describe how we construct this mapping shortly.
-This mapping ensures that all memory accesses hit a single physical page.
-The L1 data caches of recent Intel microarchitectures are virtually indexed and physically tagged. 
-As a result all these virtual pages are identical for the cache and it sees as if the same page is accessed over and over again leading to perfect cache hits. 
-(our solution would not work for architectures using virtually tagged caches).
 
 \subsection{Handling memory accesses}\label{sec:mapping}
 We now describe our technique to execute arbitrary, memory-accessing basic blocks
@@ -211,16 +48,16 @@ We first show a motivating example.
 Consider the basic block in figure \ref{fig:mem-ex},
 which is used to compute the CRC code of input bytes in Gzip.
 Highlighted instructions shows the flow of pointer values;
-essentially \textit{bits} of \verb|rdx| are used to index into a lookup table, 
+essentially \textit{bits} of \verb|%rdx| are used to index into a lookup table, 
 and the content of which is then used in the next iteration to 
-update \verb|rdx|.
+update \verb|%rdx|.
 How would one profile the throughput of this basic block?
 Without the original application context,
 this basic block \textit{cannot} be directly executed.
 Developers of Gzip familiar with this piece of code could 
 properly setup a micro-benchmark by reproducing the
 relevant lookup table used by this code snippet,
-but such approach would not scale to the hundred of 
+but such an approach would not scale to the hundreds of 
 thousands of basic blocks in our data set, most of which contain memory accesses.
 We needed some way to automatically generate the benchmarking environment
 without \textit{a priori} knowledge/assumption of the code being profiled.
@@ -302,11 +139,11 @@ We collect performance statistics in the second execution.}
 \end{figure}
 
 We now describe our solution to profile arbitrary basic blocks with memory accesses.
-Our profiling algorithm is consisted of two steps.
+Our profiling algorithm consists of two steps.
 \begin{enumerate*}
-\item We first profile the virtual pages accessed by
-the basic block (were it to run without crashing)
-and map those pages to a single physical page.
+\item We first the identify the virtual pages accessed by
+the basic block 
+and map those virtual pages to a single physical page.
 \item After the appropriate mappings are created,
 the unrolled basic block is then executed normally under
 the new page mapping.
@@ -315,7 +152,7 @@ the new page mapping.
 \textbf{Mapping pages to avoid SegFaults}
 In addition to making all the memory accesses made by the basic block valid,
 the mapping stage also ensures that all memory accesses go to the same physical page and hence stay in the L1 data cache. 
-Figure~\ref{fig:code} shows the algorithm we use to do page mapping.
+Figure~\ref{fig:code} shows the algorithm we use to do the page mapping.
 Mapping is done by executing the unrolled basic block in a forked process
  monitored by a parent process using \verb|ptrace|.
 Each attempt to access an unmapped virtual page is intercepted by
@@ -323,19 +160,182 @@ the monitoring process, which then instructs the
 executing process to create the appropriate mapping
 and to restart execution from the \textit{beginning}
 with all registers, memory values,
-as well as flag registers reinitialized.
+as well as the flag registers reinitialized.
 Re-initialization is done to ensure that in the final measurement
 stage the trace of memory addresses computed by the 
 unrolled basic block is \textit{identical} to that from the mapping stage.
 An alternative we considered was using a single process for both execution
 and monitoring, but we ultimately discarded this alternative due to
-its complexity.\footnote{Unmapping all the libc pages forces all the code to be written in assembly.}
+its complexity.\footnote{Unmapping all the libc pages forces us to write all the code in assembly.}
+
+
+%We use this methodology as the baseline and compare it with three techniques.
+%\begin{enumerate}
+%    \item Naive memory mapping.
+%    
+%    This is an naive attempt to reduce the number of crashes due to segmentation faults.
+%    We try to allocate as much memory as possible in the hope that 
+%    a basic block only try to access the allocated memory.
+%    Since we want to avoid cache misses, we only allocate 32KB of memory (size of the L1 cache).
+%    We also initialize all general purpose registers to point to the allocated memory.
+%    
+%    \item Mapping all virtual pages accessed by a basic block to a single physical page 
+%    (while using identical initialization).
+%    
+%    This is our full solution to executing basic blocks with ``random'' memory traffic.
+%    We describe how we construct this mapping in more detail in Section~\ref{sec:mapping}.
+%    We are able to profile most basic blocks using this technique alone (90\%).
+%    
+%    \item More intelligent unrolling of basic blocks.
+%    
+%    This is our technique for profiling large basic blocks that could cache instruction cache misses
+%    if profiled naively.
+%    A common practice of basic block profiling is unrolling the basic block
+%    multiple times and measuring the latency of executing the unrolled code;
+%    We show that naively applying this technique to large basic blocks
+%    leads to mis-profiling by overflowing instruction cache,
+%    and we show how we are able to use smaller unroll factors that gives
+%    accurate throughput estimation.
+%\end{enumerate}
+
+%Table~\ref{tab:ablation} shows the effect of incrementally applying
+%our techniques to measure a basic block sampled from 
+%TensorFlow~\cite{tensorflow}'s CNN training benchmark.
+%As demonstrated, without some of these techniques,
+%the results vary from obtaining no throughput due to crashes or
+%estimations that are two orders of magnitude away from the 
+%actual throughput.
+%
+%
+
+\begin{table}
+\begin{tabular}{
+|p{0.4\columnwidth}|p{0.45\columnwidth}|}
+\hline
+\textbf{(Additional) Technique} & \textbf{Percent of Basic Blocks Profiled} \\
+\hline
+None & 16.65\% \\
+
+\hline
+Mapping all accessed pages & 91.28\% \\
+
+\hline
+More intelligent unrolling & 94.24\% \\
+
+\hline
+\end{tabular}
+\\
+\caption{Ablation study showing the effect of incrementally applying our measurement techniques.}
+\label{tab:full-ablation}
+\end{table}
+
+
+\subsection{Deriving throughput from measurement}
+We use IACA's definition of throughput, i.e. 
+the average number of cycles required to execute a basic block 
+at steady state.
+\footnote{Note that this definition is the inverse of the textbook definition of throughput.}
+
+The basic strategy one usually takes to measure basic block throughput
+is unrolling a basic block multiple times and dividing the latency of the
+unrolled basic block by the unroll factor.
+The formula for estimating the throughput using this approach is shown
+in equation~\ref{eq:naive}, where $u$ is a large unroll factor
+and $\mathit{cycles}(b,u)$ is the number of cycles taken to execute basic block $b$
+unrolled $u$ times.
+\begin{equation}
+\mathit{throughput}(b) \approx \frac{\mathit{cycles}(b,u)}{u}
+\label{eq:naive}
+\end{equation}
+Compared to running the basic block inside a loop,
+unrolling has an advantage in that the measurement is not polluted by
+overhead incurred by looping.
+A typical unroll factor is 100\cite{ithemal,uops}.
+Such a high unroll factor can however incur significant
+L1-instruction cache misses for large basic blocks
+(e.g. the already unrolled inner-loop body of a GEMM kernel).
+
+The issue with unrolling naively is that,
+an unroll-factor small enough to 
+avoid instruction cache misses is 
+insufficient to hide the latency of the first few iterations.
+We thus adopted a different strategy to cope with large basic blocks.
+Equation~\ref{eq:new} shows the formula we use to estimate throughput.
+We unroll each basic block with two different unroll factors.
+These factors should be large enough 
+to warm-up the processor into a steady state.
+We then measure the latency of the two unrolled basic blocks,
+calculate the difference in the measurements, and divide it 
+by difference of the unroll factors.
+The resulting number is the throughput of the basic block.
+\begin{equation}
+\mathit{throughput}(b) \approx 
+\frac{\mathit{cycles}(b, u) - \mathit{cycles}(b, u')}{u-u'}
+\label{eq:new}
+\end{equation}
+
+\begin{equation}
+\mathit{cycles}(b, u') \approx 
+\mathit{cycles}(b, u) + \frac{\mathit{throughput(b)}}{u'-u}
+\label{eq:new-rearranged}
+\end{equation}
+Equation~\ref{eq:new} is an re-arrangement of equation~\ref{eq:new-rearranged},
+which is derived from the following observation:
+if unroll factors $u$ and $u'$ are large enough
+to get the processor into a steady state,
+then the additional $u'-u$ (suppose $u' > u$) iterations will be processed at 
+the rate of steady state throughput.
+
+The only requirement for unroll factors $u$ and $u'$ in equation~\ref{eq:new}
+is that they are large enough to get the processor into a steady state,
+while the unroll factor $u$ in equation~\ref{eq:new} has to be additionally
+large enough to amortize the cost of the first few iterations.
+Being able to profile with smaller unroll factors is essential
+for large basic blocks that typically show up in numerical kernels where
+some hot inner loops are unrolled.
+
+
+\subsection{Enforcing Modeling Variants}\label{sec:invariants}
+We guarantee that each measurement satisfies the following modeling assumptions:
+\begin{enumerate*}
+    \item Every memory accesses leads to an L1 data cache hit. 
+    \item Measurements are free of interrupts, context switches,
+    and hyper-threading.
+\end{enumerate*}
+These are the same assumptions made by existing models;
+Admittedly many of the memory accesses in deployed programs do not hit the L1 data cache.
+We nonetheless make sure that during our measurement all memory accesses hit the L1 data cache for compatibility with existing models.
+%We acknowledge that the throughput of the basic blocks depends on the program context, but 
+%the throughput of these basic blocks (i.e. those with memory accesses)
+%is inherently dependent on the program execution context.
+
+To enforce these assumptions, we monitor the following statistics in addition to core cycle counts, and reject a measurement if one of these statistics is not zero. 
+\begin{enumerate}
+    \item L1 Data Cache Read Misses
+    \item L1 Data Cache Write Misses
+    \item L1 Instruction Cache Misses
+    \item Context Switches
+\end{enumerate}
+We measure the cache misses with hardware performance counters, 
+and we use one of the system calls provided by Linux to track the number of context switches. 
+Each \textit{unrolled} basic block is timed 16 times by default,
+and we accept a basic block for further analysis only if the basic block has at least 
+8 \textit{clean}, identical timings.
+All basic blocks are measured in machines with hyper-threading disabled.
+We count the elapsed cycles by reading the core cycle counter.
+Unlike the reference cycle counter or the time-stamp counter, the core cycle counter is invariant
+to performance scaling.
+As discussed in~\ref{sec:mapping}, we map all virtual pages accessed by 
+a basic block to a single physical page.
+The L1 data caches of recent Intel microarchitectures are virtually indexed and physically tagged. 
+As a result all these virtual pages are identical for the cache and it sees as if the same page is accessed over and over again leading to perfect cache hits 
+(our solution would not work for architectures using virtually tagged caches).
 
 \subsection{Additional measurement optimizations}
 We make additional optimizations to further increase our chance
 of successfully obtaining clean measurements.
 
-\textbf{Memory Initialization} 
+\textbf{Initialization} 
 Prior to the mapping-run,
 we unmap all pages (except those containing the basic block).
 This allows us to ensure that all the memory accesses go to our single 
@@ -352,12 +352,13 @@ or too high
 (i.e. bigger than the maximum memory that
 a user space program is allowed to addressed),
 we will not be able to map the virtual page pointed by $p$.
+All general-purpose registers are initialized similarly.
 
 \textbf{Handling Subnormal Numbers}
 General speaking -- aside from division
 and specialized instructions such as \verb|sqrt|
--- floating point instructions have constant timing
-except when input of the operations are subnormal numbers.
+-- floating point instructions have constant timings
+except when the inputs of the operations are subnormal numbers.
 In our experiments where we encountered subnormal numbers,
 floating point operations can be slowed down by up to 20x.
 To ``normalize'' our timing, we configured \verb|MXCSR| register
