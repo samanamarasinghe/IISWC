@@ -2,22 +2,28 @@
 We show the evaluation of four existing basic block-level
 performance models on three recent Intel microarchitecture:
 Ivy Bridge, Haswell, and Skylake. Furthermore we discuss a few basic blocks where most models
-mis-predict by more than 30\%.
+mis-predict by more than~30\%.
 
 For the Ivy Bridge measurements we used a server with the Intel(R) Xeon(R) CPU E5-2695 v2 CPU and 128 GBs of memory. 
 For the Haswell measurements we used a server with the Intel(R) Xeon(R) CPU E5-2680 v3 CPU and 128 GBs of memory. 
 Finally for the Skylake measurements we used a server with the Intel(R) Xeon(R) W-2123 CPU and 64 GBs of memory. 
 
 We evaluated IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca}, Ithemal\cite{ithemal}, and OSACA\cite{osaca}
-on three recent Intel microarchitectures: Ivy Bridge, Haswell, Skylake.
+on three recent Intel microarchitectures: Ivy Bridge, Haswell, and Skylake.
 Some basic blocks in our dataset contain AVX2 instructions, which are not supported in Ivy Bridge,
 and these basic blocks are not included in validation for Ivy Bridge.
-For IACA we used version 3.0 for Skylake and Haswell evaluations. Since this version discontinued support for Ivy Bridge, we used 2.0 instead.
-For llvm-mca, we used version 9.0.0. OSACA is currently under development and we took the latest version at the time of writing this paper. For Ithemal too, we contacted the authors and obtained the latest version from them. 
+For Skylake and Haswell, we used IACA 3.0;
+and for Ivy Bridge we used IACA 2.0, because IACA discontinued its support for
+Ivy Bridge after version 2.0.
+For llvm-mca, we used version 9.0.0. OSACA is currently under development and we took the latest version at the time of writing this paper. For Ithemal too, we contacted the authors and obtained the latest version from them.
 
-We use relative error (i.e. absolute error of the predicted throughput normalized by the measured throughput)
+We use relative error (defined in Equation~\ref{eq:rel_err}, where $t$ is the measured throughput and $t'$ is the throughput predicted by a model)
 as the metric to measure inaccuracy.
 We use error and relative error interchangeably in the rest of the paper.
+\begin{equation}
+\mathit{err}(t, t') = \left| \frac{t - t'}{t'} \right| 
+\label{eq:rel_err}
+\end{equation}
 
 \subsection{Evaluation Metrics}\label{results}
 We report the prediction errors of the performance models in three different ways.
@@ -62,9 +68,9 @@ and \ref{fig:skl-cluster-err}) highlights
 the need of basic block classification and per-category error reporting.
 
 \subsection{Analysis}
- We first analyze how accurate and stable each estimation method is considering all error metrics. Next, we analyze per-application and per-category errors on how they differ across various microarchitectures for different estimation methods.\\
+ %We first analyze how accurate and stable each estimation method is considering all error metrics. Next, we analyze per-application and per-category errors on how they differ across various microarchitectures for different estimation methods.\\
  
-We analyze the performance of IACA, llvm-mca, Ithemal and OSACA.
+%We analyze the performance of IACA, llvm-mca, Ithemal, and OSACA.
  
  \textbf{IACA}~\cite{iaca} is relatively stable compared to other models that we evaluated.
 An interesting point to note is that IACA is consistently accurate on basic blocks from OpenSSL. 
@@ -73,7 +79,6 @@ OpenSSL is a crypto library that is dominated by basic blocks containing vector 
 
     \textbf{llvm-mca}~\cite{llvm-mca} is considerably worse on all microarchitectures compared to IACA and Ithemal,
 especially on modelling basic blocks involving loads. Also, the per-application error increases on recent microarchitectures like Skylake and Haswell compared to Ivy Bridge.
-This degradation in performance over microarchitectures is because of the tool still using outdated models and parameters
 %We suspect the decrease in performance is a result of LLVM developers 
 %having less time to update the cost models for the relatively new microarchitectures. 
 
@@ -119,25 +124,22 @@ vectorized basic blocks (i.e. parts of category-1 and category-2) also cause hig
 \textbf{Microarchitecture} & \textbf{Model} & \textbf{Average Error}\\
 \hline
 
-Ivy Bridge & IACA & 0.1693\\
-    & llvm-mca & 0.4260\\
-    & llvm-mca (rthroughput) & 0.1883 \\
-    & Ithemal & 0.1180\\
-    & OSACA & 0.3277\\
+Ivy Bridge & IACA & 0.1664\\
+    & llvm-mca & 0.2813\\
+    & Ithemal & 0.1151\\
+    & OSACA & 0.3299\\
 \hline
 
-Haswell & IACA & 0.1798\\
-    & llvm-mca & 0.4163\\
-    & llvm-mca (rthroughput) & 0.1832 \\
-    & Ithemal & 0.1253\\
-    & OSACA & 0.3916\\
+Haswell & IACA & 0.1790\\
+    & llvm-mca & 0.2511\\
+    & Ithemal & 0.1200\\
+    & OSACA & 0.3566\\
     
 \hline 
-Skylake & IACA & 0.1578\\
-    & llvm-mca & 0.4251\\
-    & llvm-mca (rthroughput) & 0.2272 \\
-    & Ithemal & 0.1191\\
-    & OSACA & 0.3768\\
+Skylake & IACA & 0.1562\\
+    & llvm-mca & 0.2632\\
+    & Ithemal & 0.1146\\
+    & OSACA & 0.3433\\
 
 \hline
 % TODO more for IVB and SKL

@@ -1,14 +1,14 @@
 \subsection{Interesting Basic Blocks}
 We look at three basic blocks where some of the evaluated models behave poorly.
 These results are from Haswell.
-Table~\ref{tab:case-study} shows assembly of these basic blocks, their 
-measured throughput, and throughput predicted by different models.
+Table~\ref{tab:case-study} shows these basic blocks, their 
+measured throughput, and the throughput predicted by different models.
 We manually inspected the instruction schedules predicted by the models
 (except for Ithemal, which just predicts a single throughput number).
-The first two examples highlight cases of some models' mis-prediction
+The first two examples highlight cases of some models' prediction
 contradicting instruction throughput specified by the manual.
 The last example shows a case where a model (llvm-mca~\cite{llvm-mca} in this case) can significantly
-mispredict throughput due to mis-scheduling, despite correct modeling of individual instructions.
+mispredict throughput due to mis-scheduling micro-ops, despite correct modeling of individual instructions.
 
 \textbf{Modelling bug due to unsigned division}.
 We look at the first example in Table~\ref{tab:case-study},
@@ -21,7 +21,7 @@ llvm-mca and IACA's predictions indicate that they are confusing
 this division (\verb|div %ecx|) with the 128-bit by 64-bit analog (\verb|div %rcx|),
 which the manual does specify to have variable latency between 80 and 95 cycles.
 We note that the predictions made by llvm-mca and IACA would still be wrong
-were we to replace the \verb|div %ecx| with \verb|div %rcx|,
+were we to replace the \verb|div %ecx| with \verb|div %rcx| in this context,
 due to the fast-path for zeroed out \verb|%rdx|.
 (which is always the case here because of the preceding \verb|xor %edx, %edx|).
 
@@ -60,7 +60,7 @@ IACA is able to use this fact and predicts accurately.
 \begin{figure}[htbp!]
     \begin{center}
     \includegraphics[width=0.7\columnwidth]{figures/interesting-examples.pdf}
-    \caption{Interesting basic blocks and their inverse throughput as observed from measurements and reported by IACA, llvm-mca and OSACA (- indicates that the tool could not time the particular basic block).}
+    \caption{Interesting basic blocks and their inverse throughput as observed from measurements and reported by IACA, llvm-mca and OSACA (- indicates that the tool crashes while processing the basic block).}
     \label{tab:case-study}
     \label{fig:schedule}
     \end{center}

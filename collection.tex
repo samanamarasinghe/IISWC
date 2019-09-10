@@ -78,7 +78,7 @@ applications today; they are well tuned for performance;
 and they all have sophisticated use of algorithms and data structures,
 giving us a large source of diverse basic blocks.
 
-Next, we selected following applications that use hand-optimized high performance kernels:
+Next, we the selected following applications that use hand-optimized high performance kernels:
 OpenSSL~\cite{openssl} (cryptography), OpenBLAS~\cite{openblas}, Eigen~\cite{eigen} (scientific computing),
 TensorFlow\cite{tensorflow} (machine learning),
 Embree\cite{embree} (rendering), and FFmpeg (multimedia).
@@ -92,8 +92,8 @@ which allows us to record every basic block
 executed at runtime.
 We opted for dynamic analysis rather than static disassembly
 because precise static disassembly of x86 binaries
-is undecidable~\cite{disassembly-undecidable}.
-We discovered in our experiments cases where
+is undecidable~\cite{disassembly-undecidable};
+and we discovered in our experiments cases where
 static disassemblers cannot distinguish padding bytes from instructions.
 We use the official benchmarking input of these applications\footnote{
 Except for FFmpeg and Gzip, which to the best of our knowledge do not have
@@ -110,16 +110,15 @@ This classification, as shown in section~\ref{results},
 allows one to compare the prediction accuracy of different types of basic blocks 
 (e.g. numerical kernel vs bit-manipulation).
 
-We classify the basic blocks as follows.
-The high-level approach we took was to first,
+The high-level approach we took to classify basic blocks works as follows:
 \begin{enumerate*}
-\item map each basic block to a representation
-that reflects its usage of hardware resources, and then
-\item cluster the basic blocks by their representations.
+\item We map each basic block to a representation
+that reflects its usage of hardware resources; we then
+\item cluster the basic blocks based on this representation.
 \end{enumerate*}
 
-Using results from Abel and Reineke~\cite{uops},
-we compute a port-combination mapping for each instruction.
+We compute a port-combination mapping for each instruction,
+using results from Abel and Reineke~\cite{uops},
 For instance,
 the port-combination mapping for \verb|xor %rax, %rbx| in Haswell
 is $\{ p0156 \rightarrow 1 \}$ (using Abel and Reineke's notation);
