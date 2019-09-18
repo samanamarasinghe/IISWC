@@ -33,18 +33,17 @@ IACA and Ithemal recognize this idiom and make predictions close to the measured
 while llvm-mca and OSACA treat this instruction as a regular vectorized XOR.
 
 \textbf{Modeling bug due to mis-scheduling}
-The last example in Table~\ref{tab:case-study} is the same basic block
-we used as the motivating example in Section~\ref{sec:mapping}.
-We focus on the schedule predicted by llvm-mca~\cite{llvm-mca}
-and explain why llvm-mca overpredicts.
+For the third examples in Table~\ref{tab:case-study}, 
+we focus on the schedule predicted by llvm-mca~\cite{llvm-mca}
+and explain why it overpredicts.
 Figure~\ref{fig:schedule} shows the schedules predicted by llvm-mca and IACA.
-Notice that the \verb|xorb| is dispatched for execution noticeably earlier in IACA's schedule.
+Notice that instruction \verb|xorq (%rcx), %rax| is dispatched
+noticeably earlier in IACA's schedule.
 llvm-mca delays the dispatch of this \verb|xorb| due to its dependence on the previous \verb|xorq|.
 llvm-mca is unable to recognize that 
-\verb|xorb -1(%rdi), %al| is implemented with a load micro-op followed by an ALU micro-op.
+\verb|xorq (%rcx), %rax| is implemented with a load micro-op followed by an ALU micro-op.
 Since the load is independent, the hardware is able to schedule it ahead of time,
 hiding its latency completely.
-IACA is able to use this fact and predicts accurately.
 
 \begin{figure}[htbp!]
     \includegraphics[width=0.95\columnwidth]{figures/scheduling.pdf}
@@ -52,7 +51,7 @@ IACA is able to use this fact and predicts accurately.
     Each red window marks the boundary of a single iteration of execution.
     The width of the windows represents the steady state throughput.
     As illustrated here, llvm-mca and IACA predicts two different schedules.
-    Notice that the xorb instruction is dispatched earlier in IACA's schedules than in llvm-mca's. 
+    Notice that the bolded instruction is dispatched earlier in IACA's schedule.
     }
     \label{tab:case-study}
 \end{figure}
