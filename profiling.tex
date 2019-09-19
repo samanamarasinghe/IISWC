@@ -36,10 +36,10 @@ unroll factors while providing accurate steady state throughput estimation.
 Table~\ref{tab:full-ablation} shows the percentage of basic blocks
 we are able to profile using these two techniques.
 
-We additionally discuss two rare events --
-gradual underflow of floating points and unaligned memory accesses -- 
-that can significantly affect profile fidelity;
-we avoid the former entirely and detect the occurrence of the latter.
+We additionally discuss three rare events---gradual underflow of floating points, unaligned memory accesses,
+and performance loss due to virtual address aliasing---that
+can significantly affect profile fidelity.
+We avoid the first event entirely and detect (and filter) the last two.
 
 \subsection{Handling memory accesses}\label{sec:mapping}
 We now describe our technique to execute arbitrary, memory-accessing basic blocks
@@ -128,10 +128,10 @@ of its memory accesses.}
 
 \end{algorithmic}
 
-\caption{Pseudocode of the our profiling routines. 
-\textit{measure} runs in a child process monitored by
+\caption{Pseudocode of the profiling routines. 
+The function \textit{measure} runs in a separate process monitored by
 \textit{monitor}.
-We execute an input basic block twice.
+We execute an unrolled basic block twice.
 The first execution is used to discover virtual pages accessed
 by the basic block, which are the then mapped to a single physical page.
 We collect performance statistics in the second execution.}
@@ -151,7 +151,7 @@ the unrolled basic block is then profiled normally.
 \textbf{Mapping pages to avoid SegFaults}
 In addition to making all the memory accesses made by the basic block valid,
 the mapping stage also ensures that all memory accesses go to the same physical page and hence stay in the L1 data cache. 
-Figure~\ref{fig:code} shows the algorithm we use to do the page mapping.
+Figure~\ref{fig:code} shows the algorithm we use to obtain this mapping.
 Mapping is done by executing the unrolled basic block in a forked process
  monitored by a parent process using \verb|ptrace|.
 Each access of an unmapped virtual page triggers a Segmentation fault, which is intercepted by
@@ -160,11 +160,12 @@ executing process to create the appropriate mapping
 and to restart execution from the \textit{beginning}
 with all registers, memory values,
 as well as the flag registers reinitialized.
-Re-initialization ensures that memory addresses accessed in the final profiling
+Re-initialization ensures that the memory addresses accessed in the final profiling
 stage is \textit{identical} to those from the mapping stage.
 An alternative we considered was using a single process for both execution
-and monitoring, but we ultimately discarded this alternative due to
-its complexity.\footnote{Unmapping all the libc pages forces us to write all the code in assembly.}
+and monitoring, but we ultimately discarded this alternative because
+it leads to the possibility of the basic block inadvertently overwriting
+the monitoring and bookkeeping code.
 
 
 
@@ -230,7 +231,7 @@ More intelligent unrolling & 94.24\% \\
 
 
 \subsection{Deriving throughput from measurement}
-We use IACA's definition of throughput, i.e. 
+We use IACA's definition of throughput:
 the average number of cycles required to execute a basic block 
 at steady state.
 \footnote{Note that this definition is the inverse of the textbook definition of throughput.}
@@ -248,7 +249,7 @@ unrolled $u$ times.
 \end{equation}
 Compared to running the basic block inside a loop,
 unrolling has an advantage in that the measurement is not polluted by
-overhead incurred by looping.
+the control overhead incurred by looping.
 A typical unroll factor is 100\cite{ithemal,uops}.
 Such a high unroll factor can however incur significant
 L1-instruction cache misses for large basic blocks
@@ -291,7 +292,7 @@ while the unroll factor $u$ in equation~\ref{eq:new} has to be additionally
 large enough to amortize the cost of the first few iterations.
 Being able to profile with smaller unroll factors is essential
 for large basic blocks that typically show up in numerical kernels where
-hot inner loops are sometimes unrolled.
+hot inner loops are unrolled.
 
 \subsection{Enforcing Modeling Variants}\label{sec:invariants}
 We guarantee that each measurement satisfies the following modeling assumptions:
@@ -318,7 +319,7 @@ we reject a measurement if one of these statistics is non-zero.
 We measure the cache misses with hardware performance counters, 
 and we use one of the system calls provided by Linux to track the number of context switches. 
 Each \textit{unrolled} basic block is timed 16 times by default,
-and we accept a basic block for further analysis only if the basic block has at least 
+and we include a basic block for further analysis only if the basic block has at least 
 8 \textit{clean}, identical timings.
 All basic blocks are measured in machines with hyper-threading disabled.
 We count the elapsed cycles by reading the core cycle counter.
@@ -378,9 +379,9 @@ There are 553 (0.183\%) basic blocks that are affected by unaligned accesses.
 Under our page mapping scheme,
 two virtual addresses that differ by a multiple of page size gets mapped to
 the same physical address. This can introduce slowdown when such aliasing causes
-extra memory dependence: Consider \verb|*p = x; y = *(p + page_size)|, where
+extra memory dependence. Consider the following code snippet: \verb|*p = x; y = *(p + page_size)|, where
 \textit{ordinarily} the load can be executed independently from the first store 
-(because there is not dependence),
+(because there is no dependence),
 but due to page aliasing introduced by our profiler, the load can only be issued
 after the the store finishes.
 We remove basic blocks whose execution that \textit{could} be affected by
@@ -388,8 +389,9 @@ page aliasing out of our analysis,
 and there are 20,729 (6.28\%) such basic blocks.
 Because there are no hardware counter that tracks stores serialized due
 to such aliasing, we instead trace all addresses accessed during profiling and
-conservatively mark a basic block then a stored is followed by an aliased load.
-We note that we can reduce occurence of page aliasing by mapping the set of virtual
+conservatively mark a basic block if we cannot prove that its execution time is not
+affected by page aliasing.
+We note that we can reduce the occurence of page aliasing by mapping the set of virtual
 pages to a larger range of physical memory (e.g. two pages instead of one).
 
 \begin{table}
@@ -426,7 +428,7 @@ inner loop body of TensorFlow\cite{tensorflow}'s CNN training benchmark.}
 \end{table}
 
 \subsection{Generalization to Other Architectures}\label{sec:generalization}
-We briefly discuss how to generalize our profiling techniques to other architectures.
+We briefly discuss how to generalize our profiling technique to other architectures.
 On a high level, there are three requirements to implementing our profiler:
 \begin{itemize}
     \item Being able to alias multiple virtual pages to the few physical page with 
@@ -437,7 +439,7 @@ On a high level, there are three requirements to implementing our profiler:
     \item Being able to either detect or disable floating-point underflow.
 \end{itemize}
 
-Our technique assumes that, on average, virtual page aliasing does not incur performance penalty -- in particular the penalty 
+Our technique assumes that, on average, virtual page aliasing does not incur performance penalty---in particular the penalty 
 caused by otherwise unnecessary cache invalidation 
 (i.e. when two aliased virtual addresses are mapped to different cache entries,
 the cache evicts one entry to ensure coherence).
@@ -447,4 +449,4 @@ and that, if the cache is virtually indexed,
 the page size is small enough so the indexing bits are not affected by address translation.
 These two conditions are sufficient to establish that any two aliased virtual addresses
 are always mapped to the same cache entries;
-to our knowledge, this applies to recent to recent implementations of x86-64 and ARM.
+to our knowledge, this applies to recent implementations of x86-64 and ARM.

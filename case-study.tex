@@ -14,7 +14,7 @@ mispredict throughput due to mis-scheduling micro-ops, despite correct modeling 
 We look at the first example in Table~\ref{tab:case-study},
 which is bottlenecked by a 64-bit by 32-bit unsigned division.
 Intel's manual~\cite{intel-manual} states that the throughput of such division
-ranges approximately from 20 to 26 cycles, which is consistent with our measurement (21.62).
+ranges from 20 to 26 cycles, which is consistent with our measurement (21.62).
 All models are wrong here; llvm-mca and IACA~\cite{iaca} significantly over-predict;
 Ithemal~\cite{ithemal} and OSACA~\cite{osaca} under-predict.
 llvm-mca and IACA's predictions indicate that they are confusing 
@@ -22,7 +22,7 @@ this division (\verb|div %ecx|) with the 128-bit by 64-bit analog (\verb|div %rc
 which the manual does specify to have variable latency between 80 and 95 cycles.
 We note that the predictions made by llvm-mca and IACA would still be wrong
 were we to replace the \verb|div %ecx| with \verb|div %rcx| in this context,
-due to the fast-path for zeroed out \verb|%rdx|.
+due to the fast-path for zeroed out \verb|%rdx|
 (which is always the case here because of the preceding \verb|xor %edx, %edx|).
 
 \textbf{Modelling bug due to zero-idioms}.

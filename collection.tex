@@ -1,10 +1,9 @@
 \section{Basic Block Collection and Classification}
 Modern microarchitectures employ various optimizations:
 pipelining, super-scalar execution, dependency breaking zero-idioms, micro-op fusion, etc.
-Some of these optimizations are not documented and are proprietary.
+Some of these optimizations are not documented or are proprietary.
 To validate performance models effectively, one would need to take
 all of these optimizations into account.
-
 A wide range of code sequences are needed to reveal a predictor's 
 weakness (or the lack of) in modelling the complex interaction of 
 individual instructions in modern hardware. 
@@ -72,13 +71,13 @@ to collect basic blocks that represent
 applications that are written in general purpose languages
 like C and C++.
 Basic blocks from these programs
-typically have high memory traffic, and are usually not-vectorized.
+typically have high memory traffic, and are usually not vectorized.
 We chose these applications because they are some of the most used
 applications today; they are well tuned for performance;
 and they all have sophisticated use of algorithms and data structures,
 giving us a large source of diverse basic blocks.
 
-Next, we the selected following applications that use hand-optimized high performance kernels:
+Next, we selected the following applications that use hand-optimized high performance kernels:
 OpenSSL~\cite{openssl} (cryptography), OpenBLAS~\cite{openblas}, Eigen~\cite{eigen} (scientific computing),
 TensorFlow\cite{tensorflow} (machine learning),
 Embree\cite{embree} (rendering), and FFmpeg (multimedia).
@@ -93,13 +92,13 @@ executed at runtime.
 We opted for dynamic analysis rather than static disassembly
 because precise static disassembly of x86 binaries
 is undecidable~\cite{disassembly-undecidable};
-and we discovered in our experiments cases where
-static disassemblers cannot distinguish padding bytes from instructions.
+and we discovered in our experiments cases of
+static disassemblers unable to distinguish padding bytes from instructions.
 We use the official benchmarking input of these applications\footnote{
 Except for FFmpeg and Gzip, which to the best of our knowledge do not have
 official benchmarks. For these two applications we use inputs
 from https://openbenchmarking.org.
-} to simulate realistic execution when recording the basic blocks.
+} to simulate realistic execution when recording the basic blocks executed.
 We evaluated Eigen on two sparse linear algebra workloads:
 sparse matrix-matrix multiplication (SPMM) and 
 sparse matrix-vector multiplication (SPMV).
@@ -123,10 +122,10 @@ For instance,
 the port-combination mapping for \verb|xor %rax, %rbx| in Haswell
 is $\{ p0156 \rightarrow 1 \}$ (using Abel and Reineke's notation);
 in other words, this instruction is implemented 
-with a micro-op that can be executed at port-0, 1, 5, and 6.
+with a single micro-op that can be executed at port-0, 1, 5, and 6.
 In Haswell, there are 13 such port combinations for all user-level instructions.
 
-After translating each basic block to its micro-ops and port combinations, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}. A topic model in language processing assigns a topic to each word based on the word's frequency in a set of documents. In our context, words are micro-operations differentiated based on their port combinations, topics are categories, and documents are basic blocks. We therefore assign a category to each micro-operation based on its port-combination frequency in a set of basic blocks.
+After translating each basic block to its port-mapping representation, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}. A topic model in language processing assigns a topic to each word based on the word's frequency in a set of documents. In our context, words are micro-operations differentiated based on their port combinations, topics are categories, and documents are basic blocks. We therefore assign a category to each micro-operation based on its port-combination frequency in a set of basic blocks.
 To infer the category for each micro-op, we
 used SciKit Learn's default implementation of stochastic variational inference for LDA\cite{lda},
 with 6 categories and the parameter values $\alpha = 1/6$ and $\beta = 1/13$. 

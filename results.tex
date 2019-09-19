@@ -4,22 +4,31 @@ performance models on three recent Intel microarchitecture:
 Ivy Bridge, Haswell, and Skylake. Furthermore we discuss a few basic blocks where most models
 mis-predict by more than~30\%.
 
-For the Ivy Bridge measurements we used a server with the Intel(R) Xeon(R) CPU E5-2695 v2 CPU and 128 GBs of memory. 
-For the Haswell measurements we used a server with the Intel(R) Xeon(R) CPU E5-2680 v3 CPU and 128 GBs of memory. 
-Finally for the Skylake measurements we used a server with the Intel(R) Xeon(R) W-2123 CPU and 64 GBs of memory. 
+For the Ivy Bridge measurements,
+we used a server with the Intel(R) Xeon(R) CPU E5-2695 v2 CPU and 128 GBs of memory. 
+For the Haswell measurements,
+we used a server with the Intel(R) Xeon(R) CPU E5-2680 v3 CPU and 128 GBs of memory. 
+Finally, for the Skylake measurements, we used a server with the Intel(R) Xeon(R) W-2123 CPU and 64 GBs of memory. 
 
 We evaluated IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca}, Ithemal\cite{ithemal}, and OSACA\cite{osaca}
 on three recent Intel microarchitectures: Ivy Bridge, Haswell, and Skylake.
-Some basic blocks in our dataset contain AVX2 instructions, which are not supported in Ivy Bridge,
-and these basic blocks are not included in validation for Ivy Bridge.
+Some basic blocks in our dataset contain AVX2 instructions,
+which are not implemented in Ivy Bridge,
+and these basic blocks are not included in the Ivy Bridge evaluation.
 For Skylake and Haswell, we used IACA 3.0;
 and for Ivy Bridge we used IACA 2.0, because IACA discontinued its support for
 Ivy Bridge after version 2.0.
-For llvm-mca, we used version 9.0.0. OSACA is currently under development and we took the latest version at the time of writing this paper. For Ithemal too, we contacted the authors and obtained the latest version from them.
+For llvm-mca, we used version 9.0.0.
+OSACA is currently under development and we took the latest version
+at the time of writing this paper.
+For Ithemal too, we contacted the authors and obtained the latest version from them.
 
 We use relative error (defined in Equation~\ref{eq:rel_err}, where $t$ is the measured throughput and $t'$ is the throughput predicted by a model)
-as the metric to measure inaccuracy.
+as the main metric to measure inaccuracy.
 We use error and relative error interchangeably in the rest of the paper.
+We additionally evaluated how each model preserves ordering of basic block performance,
+using Kendall's tau coefficient~\cite{kendalltau},
+which measures the fraction of preserved pairwise ordering.
 \begin{equation}
 \mathit{err}(t, t') = \left| \frac{t - t'}{t'} \right| 
 \label{eq:rel_err}
@@ -32,6 +41,13 @@ We report the prediction errors of the performance models in three different way
 Table \ref{tab:overall} shows the overall error of each model on different microarchitectures.
 We note that the overall error of each model can be unrepresentative
 of its performance on a given domain.
+We additionally compute the Kendall's tau coefficients~\cite{kendalltau} for the models;
+this coefficient measures the fraction of throughput ordering
+preserved by performance modelling.
+Kendall's tau coefficient is interesting when the consumers of a performance model
+are not so much concerned with the precise predictions but
+the relative ordering of predictions--such as compiler optimizations that needs 
+to select the best of candidate programs.
 
 \textbf{Per-application error}
 For each application, we weight its basic blocks by their approximate
@@ -118,34 +134,37 @@ vectorized basic blocks (i.e. parts of category-1 and category-2) also cause hig
 
 
 \begin{table}
-\begin{tabular}{|p{0.25\columnwidth}|p{0.35\columnwidth}|p{0.20\columnwidth}|}
+\begin{tabular}
+{|p{0.25\columnwidth}|p{0.25\columnwidth}|p{0.15\columnwidth}|p{0.15\columnwidth}|}
 \hline
 
-\textbf{Microarchitecture} & \textbf{Model} & \textbf{Average Error}\\
+\textbf{Microarchitecture} & \textbf{Model} &
+\textbf{Average Error} & \textbf{Kendall's Tau Coefficient} \\
 \hline
 
-Ivy Bridge & IACA & 0.1664\\
-    & llvm-mca & 0.2813\\
-    & Ithemal & 0.1151\\
-    & OSACA & 0.3299\\
+Ivy Bridge & IACA & 0.1664 & 0.8000\\
+    & llvm-mca & 0.2813 & 0.7544\\
+    & Ithemal & 0.1151 & 0.8296\\
+    & OSACA & 0.3299 & 0.6197\\
 \hline
 
-Haswell & IACA & 0.1790\\
-    & llvm-mca & 0.2511\\
-    & Ithemal & 0.1200\\
-    & OSACA & 0.3566\\
+Haswell & IACA & 0.1790 & 0.8043\\
+    & llvm-mca & 0.2511 & 0.7829\\
+    & Ithemal & 0.1200 & 0.8382\\
+    & OSACA & 0.3566 & 0.6067\\
     
 \hline 
-Skylake & IACA & 0.1562\\
-    & llvm-mca & 0.2632\\
-    & Ithemal & 0.1146\\
-    & OSACA & 0.3433\\
+Skylake & IACA & 0.1562 & 0.8066\\
+    & llvm-mca & 0.2632 & 0.7693\\
+    & Ithemal & 0.1146 & 0.8430\\
+    & OSACA & 0.3433 & 0.5976\\
 
 \hline
 % TODO more for IVB and SKL
 \end{tabular}
 \\
-\caption{Overall error of evaluated models.}
+\caption{Overall error of evaluated models. Kendall's tau coefficient~\cite{kendalltau}
+measures the fraction of pairwise throughput ordering preserved by a given model.}
 \label{tab:overall}
 \end{table}
 
