@@ -1,94 +1,157 @@
 \section{Introduction}
 
-Hardware performance models help programmers or compilers to 
-produce high performing code.
-For example, static machine code analyzers, such as IACA~\cite{iaca}, enable programmers
-to estimate the performance of short code sequences
-isolated from their source applications.
-Production compilers such as LLVM~\cite{llvm} use cost models to guide various optimizations such as instruction scheduling, loop
-vectorization and SLP vectorization~\cite{slp} (to determine whether a particular vectorization decision is beneficial).
+Processor performance models can simplify compiler optimizations---e.g.
+auto-vectorization, instruction scheduling, and register allocation---by
+allowing compiler writers to decouple the high-level optimization
+heuristics from the target machines.
+Performance models can also guide manual optimization by showing
+potential program bottlenecks.
+Inaccurate cost models can cause misoptimization,
+and it is no easy feat to construct an accurate cost model,
+which has to consider various microarchitectural employed by
+modern processors such as micro-op decomposition and out-of-order execution;
+the task is made worse by the fact that some of these optimizations 
+are not documented or proprietary.
+Despite the complexity existing performance models have to deal with,
+there is no systematic methodology to verify them.
 
-The quality of a cost model is instrumental to the success of a compiler optimization. 
-For instance, Mendis et al.\cite{goslp}
-have shown an optimal\footnote{
-With certain caveat.
-In particular their formulation is optimal
-only when the target machine only has vector-width of 2}
-solution to SLP Vectorization\cite{slp}.
-Parameterized by LLVM's vectorization cost model\cite{llvm-cost},
-their algorithm is optimal insofar as the cost model is able to accurately 
-capture the target architectures.
-In some instances, their solutions incurred slowdowns due to inaccuracies of 
-the cost models.
-Hence, to make sure that compiler optimizations and performance engineers are properly guided, it is critical to have 
-a well-tuned cost model.
+There is no systematic approach to validate cost models because there 
+is no scalable approach to precisely profile arbitrary machine code.
+Although existing machine code profilers relieve performance engineers
+from directly programming numerous hardware performance counters, 
+they are not fully automatic and
+assume that it is the user's responsibility to ensure
+the successful execution of the input code.
+Part of this is to prevent a code snippet from crashing---which
+could take up a deceivingly large chunk of profiling time---because 
+code extracted from a larger program context, when executed
+out-of-context, is likely to access memory addresses illegally and crash.
+And successfully executing a basic block is but a part of obtaining
+its throughput for model validation.
+Existing performance model make various assumptions, such as the absence of
+cache misses, that are not guaranteed by existing profilers.
 
-However, modern cost models are not developed systematically and are not properly validated.
-For example, parameters of these cost models 
-are sometimes chosen haphazardly;
-consider the following quote taken from a commit message from LLVM\cite{llvm}
-regarding its x86-64 cost model\footnote{
-\url{https://reviews.llvm.org/D46276}
-}:
-\begin{quote}
-x86's fix to avoid SDIV/UDIV vectorization is clumsy
-(multiplying the vector costs x20)
-and appears to have been implemented before the cost of
-scalarization was being realistically accounted for...
-\end{quote}
-This suggests that
-developers cannot systematically improve these cost models
-without a comprehensive benchmark to pinpoint the weakness of their models,
-and have to resort to ad hoc bug fixes.
-
-In this paper, we present a dataset
-of basic blocks with relevant throughput measurements needed to validate x86-64 cost models used for
-basic block throughput estimation. 
-We also describe the throughput profiler we designed to collect these measurements,
-with some guarantees that we will describe later.
-While there have been multiple efforts~\cite{agner,uops,exegesis} to measure per-instruction
-statistics for x86-64,
-there has been no such dataset or measurement framework to validate basic block throughput models used by
-compilers and machine code analyzers.
-Basic block throughput cannot be computed accurately even when given perfect modelling of individual instructions,
-due to opaque microarchitectural optimizations such as out-of-order execution and micro-op fusion.
-One of the challenges of curating and profiling a set of basic blocks diverse enough to
-uncover the intricacies of modern x86-64 processors is automatically profiling arbitrary
-basic blocks.
-This is much more than simply measuring the latency of an unrolled basic block,
-since code snippets with memory accesses (which is the case for most basic blocks)
-generally cannot be executed safely
-outside the context of their source applications.
-We used several techniques to profile these basic blocks out-of-context,
-while guaranteeing certain variants that we believe are essential are accurate measurements (see Section~\ref{sec:invariants}).
-Our ablation study (see Table~\ref{tab:full-ablation}) shows that, without these techniques,
-a substantial amount of these basic blocks either simply cannot be profiled due to crashing
-or produce misleading data.
-
-%We describe a benchmark for validating performance models
-%of x86-64 basic blocks.
-%In this work we focus on developing a benchmark suite to throughput prediction.
-In this paper, we make the following contributions:
+In this paper, present a novel profiler that can automatically
+profile the throughput of arbitrary basic blocks.
+We show how we use this profiler to build a benchmark for validating
+performance models of x86-64 basic blocks.
+Specifically, we make the following contributions in this paper:
 \begin{itemize}
-\item We propose a benchmark suite of over 300,000 basic blocks collected from a wide range of domains from numerical computation (e.g., OpenBLAS) to databases (SQLite).
-
-\item We describe a fully automatic framework
-for measuring the throughput of arbitrary basic blocks extracted 
-from raw binaries without any user annotation or intervention.
-We have used this framework to profile more than 2 million basic blocks.
-
-\item We automatically classified the basic blocks
-by their usage of different execution ports.
-This classification allows developers to pinpoint weaknesses
-of their performance models specific to certain patterns of x86-64 instructions.
-
-\item We evaluated four existing cost models:
-IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca} (which exposes LLVM’s cost model used for instruction scheduling),
-OSACA\cite{osaca}, and Ithemal\cite{ithemal}.
-We break the strength and weakness of these cost models down on
-different categories of basic blocks;
-e.g. we show that all such tools
-have average error higher than 30\% 
-when used to analyze numerical kernels running on Haswell machines.
+    \item We describe a fully automatic profiler
+    for arbitrary, memory-accessing basic blocks.
+    The profiler does not require any user intervention, 
+    and the measurements it produces conform with common
+    modelling assumption made by existing models;
+    for instance, it ensures that a basic block incurs
+    \textit{no cache misses}.
+    We have used this framework to profile more than 2 million basic blocks\footnote{
+    We are releasing less basic blocks than this because of licensing issues.
+    }.
+    
+    \item We propose a benchmark suite of over 300,000 basic blocks collected from a wide range of domains from numerical computation (e.g., OpenBLAS) to databases (SQLite).
+    
+    \item We automatically classified the basic blocks
+    by their usage of different execution ports.
+    This classification allows developers to pinpoint weaknesses
+    of their performance models specific to certain patterns of x86-64 instructions.
+    
+    \item We evaluated four existing cost models:
+    IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca} (which exposes LLVM’s cost model used for instruction scheduling),
+    OSACA\cite{osaca}, and Ithemal\cite{ithemal}.
+    We break the strength and weakness of these cost models down on
+    different categories of basic blocks;
+    e.g. we show that all such tools
+    have average error higher than 30\% 
+    when used to analyze numerical kernels running on Haswell machines.
 
 \end{itemize}
+
+%Hardware performance models help programmers or compilers to 
+%produce high performing code.
+%For example, static machine code analyzers, such as IACA~\cite{iaca}, enable programmers
+%to estimate the performance of short code sequences
+%isolated from their source applications.
+%Production compilers such as LLVM~\cite{llvm} use cost models to guide various optimizations such as instruction scheduling, loop
+%vectorization and SLP vectorization~\cite{slp} (to determine whether a particular vectorization decision is beneficial).
+%
+%The quality of a cost model is instrumental to the success of a compiler optimization. 
+%For instance, Mendis et al.\cite{goslp}
+%have shown an optimal\footnote{
+%With certain caveat.
+%In particular their formulation is optimal
+%only when the target machine only has vector-width of 2}
+%solution to SLP Vectorization\cite{slp}.
+%Parameterized by LLVM's vectorization cost model\cite{llvm-cost},
+%their algorithm is optimal insofar as the cost model is able to accurately 
+%capture the target architectures.
+%In some instances, their solutions incurred slowdowns due to inaccuracies of 
+%the cost models.
+%Hence, to make sure that compiler optimizations and performance engineers are properly guided, it is critical to have 
+%a well-tuned cost model.
+%
+%However, modern cost models are not developed systematically and are not properly validated.
+%For example, parameters of these cost models 
+%are sometimes chosen haphazardly;
+%consider the following quote taken from a commit message from LLVM\cite{llvm}
+%regarding its x86-64 cost model\footnote{
+%\url{https://reviews.llvm.org/D46276}
+%}:
+%\begin{quote}
+%x86's fix to avoid SDIV/UDIV vectorization is clumsy
+%(multiplying the vector costs x20)
+%and appears to have been implemented before the cost of
+%scalarization was being realistically accounted for...
+%\end{quote}
+%This suggests that
+%developers cannot systematically improve these cost models
+%without a comprehensive benchmark to pinpoint the weakness of their models,
+%and have to resort to ad hoc bug fixes.
+%
+%In this paper, we present a dataset
+%of basic blocks with relevant throughput measurements needed to validate x86-64 cost models used for
+%basic block throughput estimation. 
+%We also describe the throughput profiler we designed to collect these measurements,
+%with some guarantees that we will describe later.
+%While there have been multiple efforts~\cite{agner,uops,exegesis} to measure per-instruction
+%statistics for x86-64,
+%there has been no such dataset or measurement framework to validate basic block throughput models used by
+%compilers and machine code analyzers.
+%Basic block throughput cannot be computed accurately even when given perfect modelling of individual instructions,
+%due to opaque microarchitectural optimizations such as out-of-order execution and micro-op fusion.
+%One of the challenges of curating and profiling a set of basic blocks diverse enough to
+%uncover the intricacies of modern x86-64 processors is automatically profiling arbitrary
+%basic blocks.
+%This is much more than simply measuring the latency of an unrolled basic block,
+%since code snippets with memory accesses (which is the case for most basic blocks)
+%generally cannot be executed safely
+%outside the context of their source applications.
+%We used several techniques to profile these basic blocks out-of-context,
+%while guaranteeing certain variants that we believe are essential are accurate measurements (see Section~\ref{sec:invariants}).
+%Our ablation study (see Table~\ref{tab:full-ablation}) shows that, without these techniques,
+%a substantial amount of these basic blocks either simply cannot be profiled due to crashing
+%or produce misleading data.
+%
+%In this paper, we make the following contributions:
+%\begin{itemize}
+%\item We propose a benchmark suite of over 300,000 basic blocks collected from a wide range of domains from numerical computation (e.g., OpenBLAS) to databases (SQLite).
+%
+%\item We describe a fully automatic framework
+%for measuring the throughput of arbitrary basic blocks extracted 
+%from raw binaries without any user annotation or intervention.
+%We have used this framework to profile more than 2 million basic blocks.
+%
+%\item We automatically classified the basic blocks
+%by their usage of different execution ports.
+%This classification allows developers to pinpoint weaknesses
+%of their performance models specific to certain patterns of x86-64 instructions.
+%
+%\item We evaluated four existing cost models:
+%IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca} (which exposes LLVM’s cost model used for instruction scheduling),
+%OSACA\cite{osaca}, and Ithemal\cite{ithemal}.
+%We break the strength and weakness of these cost models down on
+%different categories of basic blocks;
+%e.g. we show that all such tools
+%have average error higher than 30\% 
+%when used to analyze numerical kernels running on Haswell machines.
+%
+%\end{itemize}
