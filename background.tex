@@ -63,25 +63,32 @@ of the code they are modelling
     \item The execution is unaffected by context switches and interrupts.
 \end{itemize}
 
-\subsection{Measurement Tools}
-Abel and Reineke\cite{uops} recently published their methodology
-to reverse engineer the detailed mapping from each instruction to the execution port combination
-that these micro-ops can use.
+\subsection{Existing Validation Tools and Profilers}
+We briefly discuss existing tools and sources used by developers to validate
+processor performance  models.
+There are roughly two categories of these sources:
+\begin{enumerate*}
+\item per-instruction cost table tabulated either by
+consulting the manual or manual benchmarking;
+\item machine code profiler for running microbenchmarks.
+\end{enumerate*}
 
-They build instruction-to-port mapping using automatically generated micro-benchmarks.
-Based on this mapping, they infer the steady state scheduling of constituent
-micro-ops for an instruction and calculate the instruction throughput based on
-this inferred schedule.
+\textbf{Per-instruction Latency/Throughput Tables}
+These datasets are created either by scraping hardware manual or
+by manual profiling 
+(to obtain the real instruction latency or throughput).
+Current sources of per-instruction information are incomplete and sometimes inaccurate~\cite{uops}. 
+More importantly, they do not lend directly to validating performance model at basic block level or more.
+Although in general it is possible to estimate the throughput of 
+a basic block by inferring the scheduling of its instructions based on their
+port usage---this is the approach taken by llvm-mca~\cite{llvm-mca} and OSACA\cite{osaca}---this
+it is incomplete and does not take microarchitectural
+optimizations that could alter the ``normal'' execution paths into account. 
+Examples of these optimizations include micro-op fusion and zero-idioms.
+Therefore, IACA\cite{iaca} is generally recognized as the more accurate analyzer
+compared to its alternatives since it can exploit
+private optimizations employed by Intel's processors.
 
-Agner Fog\cite{agner} provides a script to profile small code snippets.
-The script reports the number of cycles as well as performance statistics such as 
-the number of cache misses.
-The script assumes that it is the user's responsibility to ensure
-the successful execution of the benchmark;
-for instance, the user is expected to allocate memory and initialize pointers.
-
-
-\subsection{Existing Validation Sources}
 Intel's manual\cite{intel-manual} provides the throughput and latency
 of frequently used instructions.
 Agner Fog\cite{agner} similarly provides a table of instruction throughput and latency.
@@ -93,18 +100,36 @@ Currently the tool is limited to instructions that does not touch memory or floa
 by automatically generating a micro-benchmark that measures the opcode's average latency;
 some LLVM's developers use the tool to validate LLVM's scheduling model.
 
-Theses sources of per-instruction information are incomplete and sometimes inaccurate~\cite{uops}. 
-More importantly, they do not lend directly to validating performance model at basic block level or more.
-Although in general it is possible to estimate the throughput of 
-a basic block by inferring the scheduling of its instructions based on their
-port usage---this is the approach taken by llvm-mca~\cite{llvm-mca} and OSACA\cite{osaca}---this
-approach is incomplete as it does not take microarchitectural
-optimizations that could alter the ``normal'' execution paths into account. 
-Examples of these optimizations include micro-op fusion and zero-idioms.
-Therefore, IACA\cite{iaca} is generally recognized as the more accurate analyzer
-compared to its alternatives since it can exploit
-private optimizations employed by Intel's processors.
+Abel and Reineke\cite{uops} recently published their methodology
+to reverse engineer the detailed mapping from each instruction to the
+combination of execution ports
+that these micro-ops can use.
+They build instruction-to-port mapping using automatically generated micro-benchmarks.
+Based on this mapping, they infer the steady state scheduling of constituent
+micro-ops for an instruction and calculate the instruction throughput based on
+this inferred schedule.
 
+\textbf{Machine Code Profiler} These tools allow users to perform
+detailed microbenchmarking and is used by compiler writers manually
+to verify compiler cost models.
+These profilers are however unsuitable for our work---i.e. profiling
+a large set of arbitrary basic blocks for systematic validation.
+They require user intervention to profile arbitrary basic blocks. Most notably,
+user annotation is needed to allocate memory and
+initialize memory-addressing registers to prevent crashing.
+
+Agner Fog~\cite{agner} provides a script to profile small code snippets.
+The script reports the number of cycles as well as performance statistics such as 
+the number of cache misses.
+The script assumes that it is the user's responsibility to ensure
+the successful execution of the benchmark;
+for instance, the user is expected to allocate memory and initialize pointers.
+
+nanoBench~\cite{nanobench} is a profiler similar to that of Agner Fog's~\cite{agner},
+with two notable improvements.
+It allows the user to specify which processor-specific hardware
+to measure---in addition to cycle-counter. It also supports profiling in kernel-mode,
+removing potential noise due to context-switches and interrupts.
 
 % TODO:
 % 1. talk about compiler cost models (both LLVM and GCC), mention that there is a chicken and egg issues

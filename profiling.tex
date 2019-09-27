@@ -1,4 +1,7 @@
-\section{Basic Block Profiling}
+\section{Profiling Arbitrary Basic Blocks}
+The majority of basic blocks extracted from real-world programs cannot be profiled directly 
+using the standard profiling methodology,
+as a basic block executed out of its original program context is likely to access memory addresses illegally.
 The standard methodology for measuring the throughput of a basic block
 is to measure the latency of $n$ unrolled copies of the basic block
 and divide that latency by $n$.
@@ -7,14 +10,14 @@ This script is straightforward.
 It uses the core cycle counter to measure the latency of an unrolled basic block and
 does not modify the basic block's execution context in any way.
 The first row of Table~\ref{tab:full-ablation} presents the results of applying
-this methodology to our benchmark suite. 
-The result is that this methodology is only able to {\em successfully profile}\footnote{
+this methodology to our benchmark suite: 
+This methodology---which assumes that it is the user's responsibility to ensure a basic block's successful execution---is only able to {\em successfully profile}\footnote{
 We say a basic block is successfully profiled when it meets all of the following criteria:
 The basic blocks can be successfully executed by our profiler;
 the execution does not incur any cache misses (including data and instruction cache);
 we are able to reproduce the measurement.
-} 16.65\% of our basic blocks.
-
+} 16.65\% of our basic blocks, failing to profile the rest of the basic 
+blocks due to Segmentation Faults.
 
 Our goal is to maximize the number of basic blocks that execute without crashing, subject to the constraint that their executions satisfy our performance modelling assumptions (Section~\ref{sec:perf-models}) .
 
@@ -91,9 +94,8 @@ of its memory accesses.}
 \begin{figure}
 \begin{algorithmic}
 
-\Function{measure}{}
-    \State $page \gets \Call{getRegisterValue}{rax}$
-    \State $\Call{mmapToChosenPhysPage}{page, ...}$
+\Function{measure}{$pageToMap$}
+    \State $\Call{mmapToPhysPage}{pageToMap, ...}$
     \State $\Call{initialize}{}$
     \State $\Call{executeUnrolledBasicBlock}{}$
     
@@ -113,10 +115,8 @@ of its memory accesses.}
     \While{$true$}
         \State $memAddr \gets \Call{interceptSegFault}{pid}$
         \If{$\Call{isValidAddr}{memAddr}$}
-            \State $page \gets \Call{getPageAddr}{memAddr}$
-            \State $\Call{setRAX}{pid, page}$
-            \State $\Call{setInstructionPointer}{pid, measure}$
-            \State $\Call{resumeProcessExecution}{pid, measure}$
+            \State $p \gets \Call{getPageAddr}{memAddr}$
+            \State $\Call{resumeProcessExecution}{pid, measure(p)}$
             \State $numFaults \gets numFaults + 1$
         \EndIf
         \If{$numFaults > maxNumFaults$}
@@ -210,27 +210,29 @@ the monitoring and bookkeeping code.
 
 \begin{table}
 \begin{tabular}{
-|p{0.4\columnwidth}|p{0.45\columnwidth}|}
+|p{0.54\columnwidth}|p{0.39\columnwidth}|}
 \hline
-\textbf{(Additional) Technique} & \textbf{Percent of Basic Blocks Profiled} \\
+\textbf{(Additional) Technique} & \textbf{\% of Basic Blocks Profiled} \\
 \hline
 None & 16.65\% \\
 
 \hline
-Mapping all accessed pages & 91.28\% \\
+Mapping all accessed pages (Section~\ref{sec:mapping}) & 91.28\%\\
 
 \hline
-More intelligent unrolling & 94.24\% \\
+More intelligent unrolling (Section~\ref{sec:unrolling}) & 94.24\%\\
 
 \hline
 \end{tabular}
 \\
-\caption{Ablation study showing the effect of incrementally applying our measurement techniques.}
+\caption{Percentage of \textit{additional} basic blocks we are able to
+profile using our techniques.
+The baseline (None) is directly running an off-the-shelf profiler such as Ager Fog'script.}
 \label{tab:full-ablation}
 \end{table}
 
 
-\subsection{Deriving throughput from measurement}
+\subsection{Deriving throughput from measurement}\label{sec:unrolling}
 We use IACA's definition of throughput:
 the average number of cycles required to execute a basic block 
 at steady state.

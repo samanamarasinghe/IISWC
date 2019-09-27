@@ -1,6 +1,4 @@
 \section{Introduction}
-%Many optimizations, whether manual or automatic,
-%benefit from performance models.
 
 Hardware performance models help programmers or compilers to 
 produce high performing code.
@@ -9,19 +7,6 @@ to estimate the performance of short code sequences
 isolated from their source applications.
 Production compilers such as LLVM~\cite{llvm} use cost models to guide various optimizations such as instruction scheduling, loop
 vectorization and SLP vectorization~\cite{slp} (to determine whether a particular vectorization decision is beneficial).
-%compiler optimizations; such as instruction scheduler and SLP vectorizer.
-%instruction scheduler usto estimate the basic block throughput of different schedules and SLP vectorizer~\cite{slp} to determine whether a particular vectorization strategy is beneficial.
-%and they also alleviate developers the burden of 
-%properly setting up micro-benchmarking environment.
-%Many compiler optimizations
-%use cost models of one form or another:
-%a typical automatic vectorizer, for instance,
-%uses one to estimate the cost of vector packing
-%in the presence of irregular memory accesses~\cite{goslp};
-%instruction schedulers use one to estimate the latency
-%and throughput of instructions~\cite{llvm-sched,gcc-sched}.
-
-%The quality of a cost model is often overlooked compared to the implementation of an optimization,despite the fact that the accuracy of the former ensures the effectiveness of the latter.
 
 The quality of a cost model is instrumental to the success of a compiler optimization. 
 For instance, Mendis et al.\cite{goslp}
