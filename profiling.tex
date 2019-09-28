@@ -5,7 +5,7 @@ as a basic block executed out of its original program context is likely to acces
 The standard methodology for measuring the throughput of a basic block
 is to measure the latency of $n$ unrolled copies of the basic block
 and divide that latency by $n$.
-One of the commonly used latency measurement tool is Agner Fog's measurement script~\cite{agner}.
+One of the commonly used latency measurement tools is Agner Fog's measurement script~\cite{agner}.
 This script is straightforward. 
 It uses the core cycle counter to measure the latency of an unrolled basic block and
 does not modify the basic block's execution context in any way.
@@ -19,7 +19,7 @@ we are able to reproduce the measurement.
 } 16.65\% of our basic blocks, failing to profile the rest of the basic 
 blocks due to Segmentation Faults.
 
-Our goal is to maximize the number of basic blocks that execute without crashing, subject to the constraint that their executions satisfy our performance modelling assumptions (Section~\ref{sec:perf-models}) .
+Our goal is to maximize the number of basic blocks that execute without crashing, subject to the constraint that their executions satisfy our performance modeling assumptions (Section~\ref{sec:perf-models}).
 
 We first describe a technique to map all virtual memory pages accessed by a basic block
 to a single physical page before the execution of this basic block;
@@ -35,11 +35,11 @@ has to be large enough to hide the latency of the first and last few iterations,
 but such an unroll factor can cause instruction cache misses for large basic blocks,
 violating our modeling assumptions.
 We describe our technique to profile basic blocks with smaller
-unroll factors while providing accurate steady state throughput estimation.
+unroll factors while providing accurate steady-state throughput estimation.
 Table~\ref{tab:full-ablation} shows the percentage of basic blocks
 we are able to profile using these two techniques.
 
-We additionally discuss three rare events---gradual underflow of floating points, unaligned memory accesses,
+We additionally discuss three rare events---gradual underflow of floating-points, unaligned memory accesses,
 and performance loss due to virtual address aliasing---that
 can significantly affect profile fidelity.
 We avoid the first event entirely and detect (and filter) the last two.
@@ -50,8 +50,8 @@ without user intervention.
 We first show a motivating example.
 Consider the basic block in figure \ref{fig:mem-ex},
 which is used to compute CRC code by Gzip.
-Highlighted instructions shows the flow of pointer values;
-essentially \textit{bits} of \verb|%rdx| are used to index into a lookup table, 
+Highlighted instructions show the flow of pointer values;
+essentially \textit{bits} of \verb|%rdx| are used to index into a lookup table
 and the content of which is then used in the next iteration to 
 update \verb|%rdx|.
 How would one profile the throughput of this basic block?
@@ -161,7 +161,7 @@ and to restart execution from the \textit{beginning}
 with all registers, memory values,
 as well as the flag registers reinitialized.
 Re-initialization ensures that the memory addresses accessed in the final profiling
-stage is \textit{identical} to those from the mapping stage.
+stage are \textit{identical} to those from the mapping stage.
 An alternative we considered was using a single process for both execution
 and monitoring, but we ultimately discarded this alternative because
 it leads to the possibility of the basic block inadvertently overwriting
@@ -253,9 +253,9 @@ Compared to running the basic block inside a loop,
 unrolling has an advantage in that the measurement is not polluted by
 the control overhead incurred by looping.
 A typical unroll factor is 100\cite{ithemal,uops}.
-Such a high unroll factor can however incur significant
+Such a high unroll factor can, however, incur significant
 L1-instruction cache misses for large basic blocks
-(e.g. the already unrolled inner-loop body of a GEMM kernel).
+(e.g., the already unrolled inner-loop body of a GEMM kernel).
 
 The issue with unrolling naively is that,
 an unroll-factor small enough to 
@@ -265,7 +265,7 @@ We thus adopted a different strategy to cope with large basic blocks.
 Equation~\ref{eq:new} shows the formula we use to estimate throughput.
 We unroll each basic block with two different unroll factors.
 These factors should be large enough 
-to warm-up the processor into a steady state.
+to warm-up the processor into a steady-state.
 We then measure the latency of the two unrolled basic blocks,
 calculate the difference in the measurements, and divide it 
 by difference of the unroll factors.
@@ -281,15 +281,15 @@ The resulting number is the throughput of the basic block.
 \mathit{cycles}(b, u) + \frac{\mathit{throughput(b)}}{u'-u}
 \label{eq:new-rearranged}
 \end{equation}
-Equation~\ref{eq:new} is an re-arrangement of equation~\ref{eq:new-rearranged},
+Equation~\ref{eq:new} is a re-arrangement of equation~\ref{eq:new-rearranged},
 which is derived from the following observation:
 if unroll factors $u$ and $u'$ are large enough
-to get the processor into a steady state,
+to get the processor into a steady-state,
 then the additional $u'-u$ (suppose $u' > u$) iterations will be processed at 
-the rate of steady state throughput.
+the rate of steady-state throughput.
 
 The only requirement for unroll factors $u$ and $u'$ in equation~\ref{eq:new}
-is that they are large enough to get the processor into a steady state,
+is that they are large enough to get the processor into a steady-state,
 while the unroll factor $u$ in equation~\ref{eq:new} has to be additionally
 large enough to amortize the cost of the first few iterations.
 Being able to profile with smaller unroll factors is essential
@@ -319,7 +319,7 @@ we reject a measurement if one of these statistics is non-zero.
     \item Context Switches
 \end{enumerate}
 We measure the cache misses with hardware performance counters, 
-and we use one of the system calls provided by Linux to track the number of context switches. 
+and we use one of the system-calls provided by Linux to track the number of context switches. 
 Each \textit{unrolled} basic block is timed 16 times by default,
 and we include a basic block for further analysis only if the basic block has at least 
 8 \textit{clean}, identical timings.
@@ -330,17 +330,17 @@ to performance scaling.
 As discussed in~\ref{sec:mapping}, we map all virtual pages accessed by 
 a basic block to a single physical page.
 We thus ensure that the entire range of physical memory accessed fits in the L1 cache: The L1 caches of recent Intel processors are physically tagged, and
-the they are sized such that the indexing bits of an address are unaffected by address translation.
+they are sized such that the indexing bits of an address are unaffected by address translation.
 
 \subsection{Additional measurement optimizations}
-We make additional optimizations to further increase our chance
-of successfully obtaining clean measurements.
+We make additional optimizations to increase our chance
+of successfully obtaining clean measurements additionally.
 
 \textbf{Initialization} 
 Prior to the mapping-run,
 we unmap all pages (except those containing the basic block).
 This allows us to ensure that all the memory accesses go to our single 
-physical page and not to some previously mapped address (e.g. libc).
+physical page and not to some previously mapped address (e.g., libc).
 The physical page is
 always initialized to fill with a “moderately sized” constant
 (we used \verb|0x12345600| in our experiments)
@@ -348,9 +348,9 @@ to accommodate for indirect memory accesses.
 To see why this is necessary,
 consider a basic block that first loads a pointer $p$ from memory
 and then de-references $p$.
-If the value of $p$ is too low (e.g. 0)
+If the value of $p$ is too low (e.g., 0)
 or too high
-(i.e. bigger than the highest address that
+(i.e., bigger than the highest address that
 a user space program is allowed to addressed),
 we will not be able to map the virtual page pointed by $p$.
 All general-purpose registers are initialized similarly.
@@ -358,10 +358,10 @@ All general-purpose registers are initialized similarly.
 \textbf{Handling Subnormal Numbers}
 General speaking -- aside from division
 and specialized instructions such as \verb|sqrt|
--- floating point instructions have constant timings
+-- floating-point instructions have constant timings
 except when the inputs of the operations are subnormal numbers.
 In our experiments where we encountered subnormal numbers,
-floating point operations can be slowed down by up to 20x.
+floating-point operations can be slowed down by up to 20x.
 To ``normalize'' our timing, we configured the \verb|MXCSR| register
 to disable gradual underflow.
 We found 334 ($0.1\%$) basic blocks that would have been affected by 
@@ -385,16 +385,16 @@ extra memory dependence. Consider the following code snippet: \verb|*p = x; y = 
 \textit{ordinarily} the load can be executed independently from the first store 
 (because there is no dependence),
 but due to page aliasing introduced by our profiler, the load can only be issued
-after the the store finishes.
+after the store finishes.
 We remove basic blocks whose execution that \textit{could} be affected by
 page aliasing out of our analysis,
 and there are 20,729 (6.28\%) such basic blocks.
-Because there are no hardware counter that tracks stores serialized due
+Because there is no hardware counter that tracks stores serialized due
 to such aliasing, we instead trace all addresses accessed during profiling and
 conservatively mark a basic block if we cannot prove that its execution time is not
 affected by page aliasing.
-We note that we can reduce the occurence of page aliasing by mapping the set of virtual
-pages to a larger range of physical memory (e.g. two pages instead of one).
+We note that we can reduce the occurrence of page aliasing by mapping the set of virtual
+pages to a larger range of physical memory (e.g., two pages instead of one).
 
 \begin{table}
 \begin{tabular}{
@@ -433,7 +433,7 @@ inner loop body of TensorFlow\cite{tensorflow}'s CNN training benchmark.}
 We briefly discuss how to generalize our profiling technique to other architectures.
 On a high level, there are three requirements to implementing our profiler:
 \begin{itemize}
-    \item Being able to alias multiple virtual pages to the few physical page with 
+    \item Being able to alias multiple virtual pages to the few physical pages with 
     (on average) zero overhead.
     
     \item Performance counters that detect cache misses.
@@ -443,12 +443,12 @@ On a high level, there are three requirements to implementing our profiler:
 
 Our technique assumes that, on average, virtual page aliasing does not incur performance penalty---in particular the penalty 
 caused by otherwise unnecessary cache invalidation 
-(i.e. when two aliased virtual addresses are mapped to different cache entries,
+(i.e., when two aliased virtual addresses are mapped to different cache entries,
 the cache evicts one entry to ensure coherence).
-We therefore assume that the target processor has a physically tagged 
+We, therefore, assume that the target processor has a physically tagged 
 data cache;
 and that, if the cache is virtually indexed,
-the page size is small enough so the indexing bits are not affected by address translation.
+the page size is small enough, so the indexing bits are not affected by address translation.
 These two conditions are sufficient to establish that any two aliased virtual addresses
 are always mapped to the same cache entries;
 to our knowledge, this applies to recent implementations of x86-64 and ARM.

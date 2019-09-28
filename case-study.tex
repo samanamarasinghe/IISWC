@@ -1,5 +1,5 @@
 \subsection{Interesting Basic Blocks}
-We look at three basic blocks where some of the evaluated models behave poorly.
+We look at three basic blocks, where some of the evaluated models behave poorly.
 These results are from Haswell.
 Table~\ref{tab:case-study} shows these basic blocks, their 
 measured throughput, and the throughput predicted by different models.
@@ -10,7 +10,7 @@ contradicting instruction throughput specified by the manual.
 The last example shows a case where a model (llvm-mca~\cite{llvm-mca} in this case) can significantly
 mispredict throughput due to mis-scheduling micro-ops, despite correct modeling of individual instructions.
 
-\textbf{Modelling bug due to unsigned division}.
+\textbf{Modeling bug due to unsigned division}.
 We look at the first example in Table~\ref{tab:case-study},
 which is bottlenecked by a 64-bit by 32-bit unsigned division.
 Intel's manual~\cite{intel-manual} states that the throughput of such division
@@ -25,7 +25,7 @@ were we to replace the \verb|div %ecx| with \verb|div %rcx| in this context,
 due to the fast-path for zeroed out \verb|%rdx|
 (which is always the case here because of the preceding \verb|xor %edx, %edx|).
 
-\textbf{Modelling bug due to zero-idioms}.
+\textbf{Modeling bug due to zero-idioms}.
 We look at the second example in Table~\ref{tab:case-study}.
 The basic block consists of a single vectorized XOR of \verb|%xmm2| with itself.
 All three micro-architectures we evaluated have fast-paths for such zero-idioms. 
@@ -49,7 +49,7 @@ hiding its latency completely.
     \includegraphics[width=0.95\columnwidth]{figures/scheduling.pdf}
     \caption{Schedules predicted by llvm-mca and IACA for an example basic block.
     Each red window marks the boundary of a single iteration of execution.
-    The width of the windows represents the steady state throughput.
+    The width of the windows represents the steady-state throughput.
     As illustrated here, llvm-mca and IACA predicts two different schedules.
     Notice that the bolded instruction is dispatched earlier in IACA's schedule.
     }

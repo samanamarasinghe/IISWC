@@ -4,21 +4,21 @@ pipelining, super-scalar execution, dependency breaking zero-idioms, micro-op fu
 Some of these optimizations are not documented or are proprietary.
 To validate performance models effectively, one would need to take
 all of these optimizations into account.
-A wide range of code sequences are needed to reveal a predictor's 
-weakness (or the lack of) in modelling the complex interaction of 
+A wide range of code sequences is needed to reveal a predictor's 
+weakness (or the lack of) in modeling the complex interaction of 
 individual instructions in modern hardware. 
 
 \subsection{Basic Block Collection}
 In this work, we selected the source applications of our basic blocks with two goals:
 \begin{enumerate*}
     \item The set of applications should cover a diverse range
-of domains to represent real world workloads
+of domains to represent real-world workloads
     \item Their basic blocks should reflect usage that concerns typical users of a performance model;
     compiler developers deal with
-    basic blocks from general purpose programs,
+    basic blocks from general-purpose programs,
     which have different characteristics
     than those from 
-    high performance kernels. 
+    high-performance kernels. 
 \end{enumerate*}
 Table~\ref{tab:apps} shows the applications from which we extracted basic blocks.
 
@@ -71,7 +71,7 @@ to collect basic blocks that represent
 applications that are written in general purpose languages
 like C and C++.
 Basic blocks from these programs
-typically have high memory traffic, and are usually not vectorized.
+typically have high memory traffic and are usually not vectorized.
 We chose these applications because they are some of the most used
 applications today; they are well tuned for performance;
 and they all have sophisticated use of algorithms and data structures,
@@ -82,7 +82,7 @@ OpenSSL~\cite{openssl} (cryptography), OpenBLAS~\cite{openblas}, Eigen~\cite{eig
 TensorFlow\cite{tensorflow} (machine learning),
 Embree\cite{embree} (rendering), and FFmpeg (multimedia).
 OpenSSL, OpenBLAS, and FFmpeg use handwritten assembly for performance-critical inner loops.
-Embree is written in ispc\cite{ispc}, a data parallel language
+Embree is written in ispc\cite{ispc}, a data-parallel language
 designed specifically to target Intel's vector extensions.
 
 We collected basic blocks from these applications using
@@ -91,7 +91,7 @@ which allows us to record every basic block
 executed at runtime.
 We opted for dynamic analysis rather than static disassembly
 because precise static disassembly of x86 binaries
-is undecidable~\cite{disassembly-undecidable};
+is undecidable~\cite{disassembly-undecidable},
 and we discovered in our experiments cases of
 static disassemblers unable to distinguish padding bytes from instructions.
 We use the official benchmarking input of these applications\footnote{
@@ -100,14 +100,14 @@ official benchmarks. For these two applications we use inputs
 from https://openbenchmarking.org.
 } to simulate realistic execution when recording the basic blocks executed.
 We evaluated Eigen on two sparse linear algebra workloads:
-sparse matrix-matrix multiplication (SPMM) and 
-sparse matrix-vector multiplication (SPMV).
+sparse matrix-matrix multiplication (SpMM) and 
+sparse matrix-vector multiplication (SpMV).
 
 \subsection{Basic Block Classification}\label{classification}
 We additionally classify the basic blocks by their use of processor resources.
 This classification, as shown in section~\ref{results},
 allows one to compare the prediction accuracy of different types of basic blocks 
-(e.g. numerical kernel vs bit-manipulation).
+(e.g., numerical kernel vs bit-manipulation).
 
 The high-level approach we took to classify basic blocks works as follows:
 \begin{enumerate*}
@@ -125,21 +125,21 @@ in other words, this instruction is implemented
 with a single micro-op that can be executed at port-0, 1, 5, and 6.
 In Haswell, there are 13 such port combinations for all user-level instructions.
 
-After translating each basic block to its port-mapping representation, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}. A topic model in language processing assigns a topic to each word based on the word's frequency in a set of documents. In our context, words are micro-operations differentiated based on their port combinations, topics are categories, and documents are basic blocks. We therefore assign a category to each micro-operation based on its port-combination frequency in a set of basic blocks.
+After translating each basic block to its port-mapping representation, we used Latent Dirichlet Allocation (LDA)~\cite{lda} to build a \emph{topic model}. A topic model in language processing assigns a topic to each word based on the word's frequency in a set of documents. In our context, words are micro-operations differentiated based on their port combinations, topics are categories, and documents are basic blocks. We, therefore, assign a category to each micro-operation based on its port-combination frequency in a set of basic blocks.
 To infer the category for each micro-op, we
 used SciKit Learn's default implementation of stochastic variational inference for LDA\cite{lda},
-with 6 categories and the parameter values $\alpha = 1/6$ and $\beta = 1/13$. 
+with six categories and the parameter values $\alpha = 1/6$ and $\beta = 1/13$. 
 We then computed the most common category for each basic block, taking this to be the category of the basic block itself.
 Table~\ref{tab:categories} labels each category with which class of instructions it corresponds to.
 Note that LDA does not natively label the categories;
-we have manually labelled the categories by manual inspection.
-Figure~\ref{fig:examples} shows example basic blocks for each category.
+we have manually labeled the categories by manual inspection.
+Figure~\ref{fig:examples} shows an example basic blocks for each category.
 
 Figure~\ref{fig:apps_vs_clusters} shows the unique basic block category patterns for each application.
-As expected, applications with high performance numerical kernels such as TensorFlow and
-OpenBLAS spent most of time executing (partially) vectorized basic blocks.
+As expected, applications with high-performance numerical kernels such as TensorFlow and
+OpenBLAS spent most of the time executing (partially) vectorized basic blocks.
 The majority of SQLite and LLVM's basic blocks are not vectorized.
-OpenSSL and Gzip have many bit-manipulation code, consistent with our analysis.
+OpenSSL and Gzip have many bit-manipulation basic blocks, consistent with our analysis.
 
 \begin{table}
     \centering

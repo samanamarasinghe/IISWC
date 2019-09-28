@@ -1,37 +1,49 @@
 \section{Introduction}
 
-Processor performance models can simplify compiler optimizations---e.g.
+Processor performance models can simplify compiler optimizations---e.g.,
 auto-vectorization, instruction scheduling, and register allocation---by
 allowing compiler writers to decouple the high-level optimization
 heuristics from the target machines.
 Performance models can also guide manual optimization by showing
 potential program bottlenecks.
-Inaccurate cost models can cause misoptimization,
-and it is no easy feat to construct an accurate cost model,
-which has to consider various microarchitectural employed by
+It is, however, no easy feat to construct an accurate performance model,
+which has to consider various microarchitectural optimizations employed by
 modern processors such as micro-op decomposition and out-of-order execution;
-the task is made worse by the fact that some of these optimizations 
+to make the matter worse, some of these optimizations 
 are not documented or proprietary.
-Despite the complexity existing performance models have to deal with,
-there is no systematic methodology to verify them.
 
-There is no systematic approach to validate cost models because there 
-is no scalable approach to precisely profile arbitrary machine code.
-Although existing machine code profilers relieve performance engineers
-from directly programming numerous hardware performance counters, 
+Despite the complexity that existing performance models have to deal with,
+there is no systematic methodology to verify them. 
+This hinders the development of \emph{accurate} performance models.
+For instance, llvm-mca~\cite{llvm-mca}---which uses 
+LLVM's scheduling models---has an average error of more than 40\% on vectorized
+basic blocks (Figure~\ref{fig:skl-cluster-err}).
+Inaccurate performance models can cause mis-optimizations;
+for instance, \cite{goslp}'s optimal\footnote{
+With certain caveat.
+In particular their formulation is optimal only when the target machine only has vector-width of 2} 
+formulation of SLP vectorization~\cite{slp},
+in some cases, causes performance regression due to inaccuracies in LLVM's~\cite{llvm} performance models.
+
+
+To verify a performance model
+requires cross-validating its predictions with
+measurements collected by native profiling.
+However, there is currently no scalable approach 
+to profile arbitrary machine code, and this consequently
+hampers systematic validation of performance models.
+Although there exists machine code profilers, 
 they are not fully automatic and
 assume that it is the user's responsibility to ensure
-the successful execution of the input code.
-Part of this is to prevent a code snippet from crashing---which
-could take up a deceivingly large chunk of profiling time---because 
+the successful execution of a basic block.
+Part of this responsibility is to prevent a code snippet from crashing because 
 code extracted from a larger program context, when executed
 out-of-context, is likely to access memory addresses illegally and crash.
-And successfully executing a basic block is but a part of obtaining
-its throughput for model validation.
-Existing performance model make various assumptions, such as the absence of
-cache misses, that are not guaranteed by existing profilers.
+But successfully executing a basic block is not the end of the story.
+Existing performance models make various assumptions---such as the absence of
+cache misses---that are not guaranteed by existing profilers.
 
-In this paper, present a novel profiler that can automatically
+In this paper, we present a novel profiler that can automatically
 profile the throughput of arbitrary basic blocks.
 We show how we use this profiler to build a benchmark for validating
 performance models of x86-64 basic blocks.
@@ -41,7 +53,7 @@ Specifically, we make the following contributions in this paper:
     for arbitrary, memory-accessing basic blocks.
     The profiler does not require any user intervention, 
     and the measurements it produces conform with common
-    modelling assumption made by existing models;
+    modeling assumption made by existing models;
     for instance, it ensures that a basic block incurs
     \textit{no cache misses}.
     We have used this framework to profile more than 2 million basic blocks\footnote{
@@ -50,20 +62,15 @@ Specifically, we make the following contributions in this paper:
     
     \item We propose a benchmark suite of over 300,000 basic blocks collected from a wide range of domains from numerical computation (e.g., OpenBLAS) to databases (SQLite).
     
-    \item We automatically classified the basic blocks
-    by their usage of different execution ports.
-    This classification allows developers to pinpoint weaknesses
-    of their performance models specific to certain patterns of x86-64 instructions.
-    
-    \item We evaluated four existing cost models:
-    IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca} (which exposes LLVM’s cost model used for instruction scheduling),
-    OSACA\cite{osaca}, and Ithemal\cite{ithemal}.
-    We break the strength and weakness of these cost models down on
-    different categories of basic blocks;
-    e.g. we show that all such tools
-    have average error higher than 30\% 
-    when used to analyze numerical kernels running on Haswell machines.
+    \item We evaluated four existing performance models---IACA~\cite{iaca}, llvm-mca~\cite{llvm-mca} (which exposes LLVM’s performance model used for instruction scheduling), OSACA\cite{osaca}, and Ithemal\cite{ithemal}---on three recent Intel microarchitectures:
+    Ivy Bridge, Haswell, and Skylake.
 
+    \item We automatically classified these basic blocks
+    by their use of different execution ports.
+    Using this classification,
+    we analyze the strengths and weaknesses of 
+    the performance models on different categories of basic blocks.
+    
 \end{itemize}
 
 %Hardware performance models help programmers or compilers to 

@@ -15,9 +15,9 @@ predictions.
 
 llvm-mca~\cite{llvm-mca} is a similar tool inspired by IACA. 
 Implemented as an out-of-order super-scalar simulator,
-it uses parameters (e.g. instruction throughput)
+it uses parameters (e.g., instruction throughput)
 supplied by LLVM\cite{llvm}'s backend scheduling model.
-The reuse of scheduling model is an explicit design choice
+Reusing of the scheduling model is an explicit design choice
 made to expose LLVM's cost model for testing.
 Thus the accuracy of llvm-mca has a bearing on
 that of LLVM's scheduling model.
@@ -25,7 +25,7 @@ that of LLVM's scheduling model.
 OSACA\cite{osaca} is an analyzer developed as the open-source
 alternative to IACA. It is similar to llvm-mca in that
 it is implemented as a parametrized out-of-order simulator---in
-this case the parameters come from the measured throughput
+this case, the parameters come from the measured throughput
 and latency data for individual instructions.
 
 Ithemal\cite{ithemal} is a basic block throughput predictor
@@ -37,7 +37,7 @@ without reporting an interpretable execution trace.
 Production compilers such as LLVM\cite{llvm} and GCC typically use cost models 
 to guide optimizations.
 Unlike ``user-facing'' models such as IACA or llvm-mca, these cost models typically
-model the costs at instruction level, rather than at whole basic block level.
+model the costs at the instruction level, rather than at whole basic block level.
 These compilers also use multiple cost models.
 LLVM, for instance uses (at least) three cost models: 
 a generic, per-instruction IR cost model in its middle-end IR~\cite{llvm-cost};
@@ -46,20 +46,20 @@ one that captures the information required for instruction scheduling,
 and another one that models the cost of register uses---such as cost of loads
 and register-to-register transfer---in register allocation~\cite{llvm-reg}.
 GCC similarly employs analogous models~\cite{gcc-cost,gcc-sched}.
-Out of the aforementioned models, to our best knowledge, 
+Out of the models discussed so far, to our best knowledge, 
 the scheduling model of LLVM is the only one exposed by an interface
-(in this case llvm-mca) for testing in isolation from its client optimizations.
+(in this case, llvm-mca) for testing in isolation from its client optimizations.
 % TODO: can we make a stronger statement saying given our work, we think
 % other models should be exposed as well?
 
 
 \vspace{1em}
 \noindent{\bf Modeling Assumptions.}
-All aforementioned cost models makes the following assumptions about the execution context
-of the code they are modelling
+All of cost models discussed above make the following assumptions about the execution context
+of the code they are modeling
 \begin{itemize}
     \item All memory accesses hit the L1-cache.
-    \item All instructions reside in instruction cache.
+    \item All instructions reside in the instruction cache.
     \item The execution is unaffected by context switches and interrupts.
 \end{itemize}
 
@@ -78,8 +78,8 @@ These datasets are created either by scraping hardware manual or
 by manual profiling 
 (to obtain the real instruction latency or throughput).
 Current sources of per-instruction information are incomplete and sometimes inaccurate~\cite{uops}. 
-More importantly, they do not lend directly to validating performance model at basic block level or more.
-Although in general it is possible to estimate the throughput of 
+More importantly, they do not lead directly to validating performance model at basic block level or more.
+Although in general, it is possible to estimate the throughput of 
 a basic block by inferring the scheduling of its instructions based on their
 port usage---this is the approach taken by llvm-mca~\cite{llvm-mca} and OSACA\cite{osaca}---this
 it is incomplete and does not take microarchitectural
@@ -93,7 +93,7 @@ Intel's manual\cite{intel-manual} provides the throughput and latency
 of frequently used instructions.
 Agner Fog\cite{agner} similarly provides a table of instruction throughput and latency.
 Google's EXEgesis team~\cite{exegesis} provides a tool that can automatically extract
-machine readable instruction specifications from Intel's manual.
+machine-readable instruction specifications from Intel's manual.
 llvm-exegesis, designed by the same team, is a tool that determines
 the latency of an input instruction opcode\footnote{
 Currently the tool is limited to instructions that does not touch memory or floating point registers} 
@@ -105,14 +105,14 @@ to reverse engineer the detailed mapping from each instruction to the
 combination of execution ports
 that these micro-ops can use.
 They build instruction-to-port mapping using automatically generated micro-benchmarks.
-Based on this mapping, they infer the steady state scheduling of constituent
+Based on this mapping, they infer the steady-state scheduling of constituent
 micro-ops for an instruction and calculate the instruction throughput based on
 this inferred schedule.
 
 \textbf{Machine Code Profiler} These tools allow users to perform
-detailed microbenchmarking and is used by compiler writers manually
+detailed microbenchmarking and are used by compiler writers manually
 to verify compiler cost models.
-These profilers are however unsuitable for our work---i.e. profiling
+These profilers are, however, unsuitable for our work---i.e., profiling
 a large set of arbitrary basic blocks for systematic validation.
 They require user intervention to profile arbitrary basic blocks. Most notably,
 user annotation is needed to allocate memory and

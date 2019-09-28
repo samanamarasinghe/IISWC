@@ -1,8 +1,8 @@
 \section{Evaluation}
 We show the evaluation of four existing basic block-level
 performance models on three recent Intel microarchitecture:
-Ivy Bridge, Haswell, and Skylake. Furthermore we discuss a few basic blocks where most models
-mis-predict by more than~30\%.
+Ivy Bridge, Haswell, and Skylake. Furthermore, we discuss a few basic blocks where most models
+mispredict by more than~30\%.
 
 For the Ivy Bridge measurements,
 we used a server with the Intel(R) Xeon(R) CPU E5-2695 v2 CPU and 128 GBs of memory. 
@@ -16,14 +16,14 @@ Some basic blocks in our dataset contain AVX2 instructions,
 which are not implemented in Ivy Bridge,
 and these basic blocks are not included in the Ivy Bridge evaluation.
 For Skylake and Haswell, we used IACA 3.0;
-and for Ivy Bridge we used IACA 2.0, because IACA discontinued its support for
+and for Ivy Bridge we used IACA 2.0 because IACA discontinued its support for
 Ivy Bridge after version 2.0.
 For llvm-mca, we used version 9.0.0.
-OSACA is currently under development and we took the latest version
+OSACA is currently under development, and we took the latest version
 at the time of writing this paper.
 For Ithemal too, we contacted the authors and obtained the latest version from them.
 
-We use relative error (defined in Equation~\ref{eq:rel_err}, where $t$ is the measured throughput and $t'$ is the throughput predicted by a model)
+We use relative error (defined in Equation~\ref{eq:rel_err}, where $t$ is the measured throughput, and $t'$ is the throughput predicted by a model)
 as the main metric to measure inaccuracy.
 We use error and relative error interchangeably in the rest of the paper.
 We additionally evaluated how each model preserves ordering of basic block performance,
@@ -41,9 +41,9 @@ We report the prediction errors of the performance models in three different way
 Table \ref{tab:overall} shows the overall error of each model on different microarchitectures.
 We note that the overall error of each model can be unrepresentative
 of its performance on a given domain.
-We additionally compute the Kendall's tau coefficients~\cite{kendalltau} for the models;
+We additionally compute Kendall's tau coefficients~\cite{kendalltau} for the models;
 this coefficient measures the fraction of throughput ordering
-preserved by performance modelling.
+preserved by performance modeling.
 Kendall's tau coefficient is interesting when the consumers of a performance model
 are not so much concerned with the precise predictions but
 the relative ordering of predictions--such as compiler optimizations that needs 
@@ -51,7 +51,7 @@ to select the best of candidate programs.
 
 \textbf{Per-application error}
 For each application, we weight its basic blocks by their approximate
-dynamic execution frequency,
+dynamic execution frequency
 and report the weighted average error.
 We obtain each basic block's dynamic frequency using sample-based profiling.
 Weighting the basic blocks allows us to focus on those that have
@@ -67,12 +67,12 @@ show the breakdown of the errors by applications.
 
 \textbf{Per-category error} 
 We automatically classify the basic blocks into
-to different categories, as presented in Section~\ref{classification},
+different categories, as presented in Section~\ref{classification},
 and report the average error for each category.
-Using per-category error complements per-application error,
+Using per-category error complements per-application error
 because the weighted average error for an application can be less informing 
 when the application is dominated by a few basic blocks
-(i.e. Eigen, Tensorflow, and Gzip).
+(i.e., Eigen, Tensorflow, and Gzip).
 Figure \ref{fig:ivb-cluster-err}, \ref{fig:hsw-cluster-err}, 
 and \ref{fig:skl-cluster-err} show the breakdown of the errors by basic block categories.
 
@@ -94,25 +94,25 @@ OpenSSL is a crypto library that is dominated by basic blocks containing vector 
 (category-1) and IACA models these well. 
 
     \textbf{llvm-mca}~\cite{llvm-mca} is considerably worse on all microarchitectures compared to IACA and Ithemal,
-especially on modelling basic blocks involving loads. Also, the per-application error increases on recent microarchitectures like Skylake and Haswell compared to Ivy Bridge.
+especially on modeling basic blocks involving loads. Also, the per-application error increases on recent microarchitectures like Skylake and Haswell compared to Ivy Bridge.
 %We suspect the decrease in performance is a result of LLVM developers 
 %having less time to update the cost models for the relatively new microarchitectures. 
 
-\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks (e.g. category-2).
-Ithemal is also considerably better than other models at modelling basic blocks with memory dependence,
+\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks (e.g., category-2).
+Ithemal is also considerably better than other models at modeling basic blocks with memory dependence,
 as demonstrated by its errors on predicting basic blocks from categories 4 and 8.
 We discussed Ithemal's underperformance on vectorized basic blocks with the authors of Ithemal, who suggested that the inconsistency
-was a result of imbalance in their training dataset;
+was a result of an imbalance in their training dataset;
 the majority of which, similar to our data set, consists of non-vectorized basic blocks.
 
-\textbf{OSACA}\cite{osaca} is on average more accurate than llvm-mca but
+\textbf{OSACA}\cite{osaca} is, on average, more accurate than llvm-mca but
 considerably less than IACA~\cite{iaca} and Ithemal~\cite{ithemal}.
-We note that this has less to do with OSACA's methodology than the engineering of its currently under developement instruction parser.
+We note that this has less to do with OSACA's methodology than the engineering of its currently under development instruction parser.
 During our evaluations, we found and reported five bugs related to OSACA's instruction parser.
 In particular, OSACA does not recognize several instruction forms;
 depending on the cases, it either crashes or treats unrecognized instruction forms as nops.
 One such instruction form is any instruction that reads an immediate operand and writes to memory
-(e.g. \verb|add $1, (rbx)|), and OSACA treats these instructions as nops, thus under-reporting the throughput of
+(e.g., \verb|add $1, (rbx)|), and OSACA treats these instructions as nops, thus under-reporting the throughput of
 many basic blocks.
 
 \if 0
@@ -121,7 +121,7 @@ many basic blocks.
 \textbf{Per-category error.} Generally speaking, basic blocks dominated by stores
 (category-4) are easier to predict,
 while the throughput of basic blocks that mixes load instructions
-with other operations (e.g. category-3) are considerably
+with other operations (e.g., category-3) are considerably
 more difficult to predict -- the prediction error is on average more than
 twice higher than predicting basic blocks with only stores. 
 We surmise that this is due to weakness of existing analyzers to model 
