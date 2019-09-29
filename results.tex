@@ -144,19 +144,19 @@ vectorized basic blocks (i.e. parts of category-1 and category-2) also cause hig
 
 Ivy Bridge & IACA & 0.1664 & 0.8000\\
     & llvm-mca & 0.2813 & 0.7544\\
-    & Ithemal & 0.1151 & 0.8296\\
+    & Ithemal & \textbf{0.1151} & \textbf{0.8296}\\
     & OSACA & 0.3299 & 0.6197\\
 \hline
 
 Haswell & IACA & 0.1790 & 0.8043\\
     & llvm-mca & 0.2511 & 0.7829\\
-    & Ithemal & 0.1200 & 0.8382\\
+    & Ithemal & \textbf{0.1200} & \textbf{0.8382}\\
     & OSACA & 0.3566 & 0.6067\\
     
 \hline 
 Skylake & IACA & 0.1562 & 0.8066\\
     & llvm-mca & 0.2632 & 0.7693\\
-    & Ithemal & 0.1146 & 0.8430\\
+    & Ithemal & \textbf{0.1146} & \textbf{0.8430}\\
     & OSACA & 0.3433 & 0.5976\\
 
 \hline
@@ -164,10 +164,10 @@ Skylake & IACA & 0.1562 & 0.8066\\
 \end{tabular}
 \\
 \caption{Overall error of evaluated models. Kendall's tau coefficient~\cite{kendalltau}
-measures the fraction of pairwise throughput ordering preserved by a given model.}
+measures the fraction of pairwise throughput ordering preserved by a given model.
+The bolded entry of each column shows the best model.}
 \label{tab:overall}
 \end{table}
-
 
 \begin{figure} \includegraphics[width=\columnwidth]{figures/ivb-app-err.pdf} \caption{Per-application error for each model on Ivy Bridge;
 error for each basic block is weighted by the frequency it is sampled during profiling.}

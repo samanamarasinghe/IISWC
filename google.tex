@@ -1,0 +1,61 @@
+\subsection{Case Study on Two Production Server Applications}
+Using basic blocks extracted two production applications from Google---Spanner~\cite{spanner} and Dremel~\cite{dremel},
+we additionally validated the performance models discussed in this paper 
+(except OSACA, due to licensing issues).
+Spanner is a highly available, globally distributed database,
+designed to scale up to millions of machines and trillions of database rows \cite{spanner}.
+Dremel is a scalable,
+interactive ad-hoc query system for analysis of read-only data,
+capable of running aggregation queries over trillion-row tables in seconds \cite{dremel}.
+
+We show the composition of basic blocks from Spanner and Dremel in Figure~\ref{fig:google-blocks}.
+Note that both applications spend almost half of the time executing load instructions (category-6)---Spanner 40\% and Dremel 50\%, respectively. Compared to the subset of open-source applications included in our dataset that is implemented in general-purpose, high-level languages,
+Spanner and Dremel have significantly more (partially) vectorized basic blocks (category-1).
+
+\begin{figure}[htbp!]
+    \includegraphics[width=0.95\columnwidth]{figures/google-blocks.pdf}
+    \caption{Basic Block composition of Spanner. Each basic block is weighted by its
+    execution frequency.}
+    \label{fig:google-blocks}
+\end{figure}
+
+On a Haswell machine, we use our profilers
+to measure the throughput of the 100,000 most frequently executed  basic blocks
+from the two applications. Table~\ref{tab:google-numbers} shows the accuracy
+of IACA, llvm-mca, and Ithemal predicting these basic blocks.
+Given the basic block categories of the 
+two applications,
+the overall prediction error of these models is consistent with our previous analysis,
+with one exception:
+llvm-mca, which has average prediction error of 25\% on Haswell, predicts noticeably better
+when processing Spanner and Dremel's basic blocks.
+
+\begin{table}[h]
+\begin{tabular}
+{|p{0.15\columnwidth}|p{0.15\columnwidth}|p{0.15\columnwidth}|p{0.15\columnwidth}|p{0.15\columnwidth}|}
+\hline
+
+\textbf{Application} & \textbf{Model} &
+\textbf{Average Error} & \textbf{Weighted Error} & \textbf{Kendall's Tau Coefficient} \\
+\hline
+
+Spanner & IACA & 0.1892 & 0.1659 & 0.7786\\
+    & llvm-mca & 0.1764 & 0.1519 & 0.7623\\
+    & Ithemal & \textbf{0.1629} & \textbf{0.1414} & \textbf{0.7799}\\
+\hline
+
+Dremel & IACA & 0.1883 & 0.1846 & 0.7835\\
+    & llvm-mca & 0.1777 & \textbf{0.1831} & 0.7685\\
+    & Ithemal & \textbf{0.1640} & 0.1871 & \textbf{0.7862}\\
+
+\hline
+\end{tabular}
+\\
+\caption{Accuracy of IACA, llvm-mca, and Ithemal predicting basic blocks from Spanner and Dremel.
+Bolded entries are the best among the three evaluated models.
+Kendall's tau coefficient~\cite{kendalltau}
+measures the fraction of pairwise throughput ordering preserved by a given model;
+so the higher the better.
+The ``Weighted Error'' column shows prediction errors weighted by a basic block's runtime frequency.}
+\label{tab:google-numbers}
+\end{table}
