@@ -27,35 +27,40 @@ formulation of SLP vectorization~\cite{slp},
 in some cases, causes performance regression due to inaccuracies in LLVM's~\cite{llvm} performance models.
 
 
-To verify a performance model
-requires cross-validating its predictions with
-measurements collected by native profiling.
+Verifying a performance model
+entails cross-validating its predictions with
+measurements collected
+from native profiling.
 However, there is currently no scalable approach 
-to profile arbitrary machine code, and this consequently
-hampers systematic validation of performance models.
-Although there exists machine code profilers, 
-they are not fully automatic and
-assume that it is the user's responsibility to ensure
-the successful execution of a basic block.
-Part of this responsibility is to prevent a code snippet from crashing because 
-code extracted from a larger program context, when executed
+to profile arbitrary machine code, which 
+prevents a systematic validation of existing models.
+Existing machine code profilers are not fully automatic and
+unload the responsibility to ensure a basic block's successful
+execution to the user.
+Part of this responsibility is to prevent a code snippet from crashing: 
+Code extracted from a larger program context, when executed
 out-of-context, is likely to access memory addresses illegally and crash.
-But successfully executing a basic block is not the end of the story.
-Existing performance models make various assumptions---such as the absence of
-cache misses---that are not guaranteed by existing profilers.
+However, successfully executing a basic block alone is insufficient.
+One also needs to ensure that a basic block 
+is profiled in an environment
+conforming to common modeling invariants
+assumed by a performance model,
+such as the absence of cache misses,
+but most of these invariants are \textit{not}
+guaranteed by existing profilers.
 
 In this paper, we present a novel profiler that can automatically
-profile the throughput of arbitrary basic blocks.
+profile the throughput of \textit{arbitrary} basic blocks.
 We show how we use this profiler to build a benchmark for validating
 performance models of x86-64 basic blocks.
 Specifically, we make the following contributions in this paper:
 \begin{itemize}
     \item We describe a fully automatic profiler
     for arbitrary, memory-accessing basic blocks.
-    The profiler does not require any user intervention, 
-    and the measurements it produces conform with common
+    The profiler does not require any user intervention.
+    Its measurements conform with common
     modeling assumption made by existing models;
-    for instance, it ensures that a basic block incurs
+    e.g., it ensures that a basic block incurs
     \textit{no cache misses}.
     We have used this framework to profile more than 2 million basic blocks\footnote{
     We are releasing less basic blocks than this because of licensing issues.

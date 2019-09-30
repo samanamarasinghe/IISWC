@@ -1,5 +1,5 @@
 \subsection{Case Study on Two Production Server Applications}
-Using basic blocks extracted two production applications from Google---Spanner~\cite{spanner} and Dremel~\cite{dremel},
+Using basic blocks extracted from two production applications in Google---Spanner~\cite{spanner} and Dremel~\cite{dremel},
 we additionally validated the performance models discussed in this paper 
 (except OSACA, due to licensing issues).
 Spanner is a highly available, globally distributed database,
@@ -8,9 +8,17 @@ Dremel is a scalable,
 interactive ad-hoc query system for analysis of read-only data,
 capable of running aggregation queries over trillion-row tables in seconds \cite{dremel}.
 
-We show the composition of basic blocks from Spanner and Dremel in Figure~\ref{fig:google-blocks}.
-Note that both applications spend almost half of the time executing load instructions (category-6)---Spanner 40\% and Dremel 50\%, respectively. Compared to the subset of open-source applications included in our dataset that is implemented in general-purpose, high-level languages,
-Spanner and Dremel have significantly more (partially) vectorized basic blocks (category-1).
+We show the composition of basic blocks these two applications in Figure~\ref{fig:google-blocks}.
+Spanner and Dremel spend almost half of the time executing load instructions (category-6)---40\% and 50\%, respectively. 
+Compared to similar applications from our 
+data set,
+they spend significantly more
+time---12\% and 9\%, respectively---executing vectorized basic blocks.
+The closest applications in our dataset are
+SQLite and Redis, and in contrast, they spend 5.0\% and 0.2\%
+of the time executing (partially) vectorized basic blocks (category-1 and -2).
+This is evidence of Google's effort to optimize
+these applications.
 
 \begin{figure}[htbp!]
     \includegraphics[width=0.95\columnwidth]{figures/google-blocks.pdf}
@@ -23,12 +31,12 @@ On a Haswell machine, we use our profilers
 to measure the throughput of the 100,000 most frequently executed  basic blocks
 from the two applications. Table~\ref{tab:google-numbers} shows the accuracy
 of IACA, llvm-mca, and Ithemal predicting these basic blocks.
-Given the basic block categories of the 
+Given the dominant basic block categories of the 
 two applications,
-the overall prediction error of these models is consistent with our previous analysis,
+their predictions are consistent with our previous analysis,
 with one exception:
-llvm-mca, which has average prediction error of 25\% on Haswell, predicts noticeably better
-when processing Spanner and Dremel's basic blocks.
+llvm-mca, which has an average prediction error of 25\% on Haswell, predicts noticeably better
+when processing Spanner's and Dremel's basic blocks.
 
 \begin{table}[h]
 \begin{tabular}

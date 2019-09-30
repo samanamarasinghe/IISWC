@@ -188,19 +188,19 @@ error for each basic block is weighted by the frequency it is sampled during pro
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figures/ivb-cluster-err.pdf}
-\caption{Per-cluster error for each model on Ivy Bridge}
+\caption{Per-category error for each model on Ivy Bridge}
 \label{fig:ivb-cluster-err}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figures/hsw-cluster-err.pdf}
-\caption{Per-cluster error for each model on Haswell}
+\caption{Per-category error for each model on Haswell}
 \label{fig:hsw-cluster-err}
 \end{figure}
 
 \begin{figure}
 \includegraphics[width=\columnwidth]{figures/skl-cluster-err.pdf}
-\caption{Per-cluster error for each model on Skylake}
+\caption{Per-category error for each model on Skylake}
 \label{fig:skl-cluster-err}
 \end{figure} 
 
@@ -265,7 +265,7 @@ hiding its latency completely.
 \begin{figure}[htbp!]
     \begin{center}
     \includegraphics[width=0.7\columnwidth]{figures/interesting-examples.pdf}
-    \caption{Interesting basic blocks and their inverse throughput as observed from measurements and reported by IACA, llvm-mca and OSACA (- indicates that the tool crashes while processing the basic block).}
+    \caption{Interesting basic blocks and their inverse throughput as observed from measurements and reported by IACA, llvm-mca, and OSACA.}
     \label{tab:case-study}
     \label{fig:schedule}
     \end{center}

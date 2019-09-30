@@ -1,85 +1,34 @@
 \begin{abstract}
-%Modern microprocessors have undergone decades of hardware optimizations.
-%For example, modern x86-64 microprocessors employ sophisticated
-%instruction execution paths with heavily pipelined,
-%out-of-order, super-scalar execution units that are highly complex.
-%Producing code that
-%exploits and optimizes for this underlying execution environment requires careful
-%modelling of the microprocessor functionality. To achieve this, modern compilers employ processor models that predict
-%the cost of
-%executing a set of instructions to perform backend optimizations such as instruction
-%selection, register allocation, instruction scheduling etc.
-%\ajay{The lines till here sound a bit repetitive. We are not saying anything concrete here. All we are saying is microprocessors are complex}.
-%\ajay{Also, mentioning x86\_64 as an example is a bit misleading. Because we do only for x86\_64. We should start directly with - Modern x86\_64 employs}.
-%However, these cost models receive less attention than optimizations themselves.
-Modern x86 processors have complex performance characteristics due
-to micro-architectural optimizations such as pipelining, super-scalar and
-out-of-order execution, and micro-op fusion.
-To reduce the complexity of optimizing for these processors,
-many optimization techniques, manual or automatic, use cost models
-to abstract away target machines.
-Inaccurate models can cause misoptimizations.
-There are known, sometimes significant issues of
-cost models in production compilers such as LLVM
-and in vendor supplied machine code analyzers such as Intel's IACA.
-IACA has been shown in some cases to deviate from the measured throughput
-of a basic block of instructions by more than 2x.
-Despite this, there is no standard, systematic approach or tooling
-to perform validation and tuning of processor cost models.
+Compilers and 
+performance engineers use hardware performance models
+to simplify program optimizations.
+Performance models provide the necessary abstraction
+over
+the increasingly complex modern processors.
+However, constructing and maintaining a performance model
+is no easy feat, given the numerous microarchitectural
+optimizations employed by modern processors.
+Despite the complexity they face
+and reported cases of their mispredictions (e.g. more then 30\% relative error),
+there is no systematic validation of existing
+performance models---such as IACA and llvm-mca---because there is no scalable machine code profiler
+that can \textit{automatically} obtain throughput of arbitrary basic block while still conforming to common modelling assumptions.
 
-In this paper, we present the necessary tooling and a benchmark suite
-for validating and tuning cost models of x86-64 basic blocks.
-Our benchmark suite contains more than 300,000 
-basic blocks extracted from a wide range of applications.
-We describe our techniques to profile arbitrary basic blocks automatically and accurately,
-which entails much more than simply measuring the latency of an unrolled basic blocks;
-in fact our ablation study shows that the profiling \textit{without} some of our measures
-ranges from crashing to obtaining results that are orders of magnitude away from the ground truth.
-We analyze the benchmark suite and show how and where popular
-cost models such as llvm-mca, IACA, Ithemal and
-OSACA deviate from the measured throughput.
-We show that in certain classes of basic blocks
-(e.g. vectorized numerical kernels) even the most accurate
-model is on average more than 30\% away from the ground truth.
-Furthermore, our dataset can be used as training data for learning-based cost models, such as in Ithemal.
+In this paper, we present a novel profiler
+that can profile \textit{arbitrary}, memory-accessing
+basic blocks without any user-intervention. 
+We used this profiler to build a benchmark for
+the systematic validation of existing performance models
+of x86-64 basic blocks.
+Using this benchmark, 
+we evaluated four existing performance models: IACA,
+llvm-mca, Ithemal, and OSACA.
+We describe how to automatically classify these basic blocks
+based on their use of CPU resources.
+Using this classification, our benchmark can give a detailed analysis of a performance model's strengths and weaknesses on
+different basic block categories.
+We show, for instance, that all the models we evaluated
+have average errors higher than 30\% while predicting
+vectorized basic blocks.
 
-%In addition to cost model validation,
-%our dataset and the profiling infrastructure is useful
-%for data-driven cost model construction\cite{ithemal}.
-
-%In spite of this, compiler cost models undergo low levels
-%of validation and scrutiny due to the lack of tolling and
-%test suites that generate validation data.
-
-
-% Modern super-scalar out-or-order processors are complex objects.
-% To reduce the complexity of optimizing for these processors,
-% many optimization techniques, manual or automatic, use cost models
-% to abstract away target machines.
-% Cost models however receive less attentions than optimizations,
-% and inaccurate models can cause miss optimizations.
-% There are known, sometimes significant issues of
-% cost models in production compilers such as LLVM\cite{llvm,goslp}.
-% Even IACA, Intel's own throughput predictor has
-% been shown in some cases to deviate from measured throughput
-% by more than 100\%.
-
-% Despite the importance of existing cost models,
-% to this day there is no standard, systematic approach 
-% to perform cost model validation and tuning.
-% We describe a benchmark for validating performance 
-% models of x86 basic blocks.
-% Our dataset contains more than three hundred thousand
-% basic blocks extracted from a wide range of applications.
-% We describe our technique to profile the throughput
-% of these basic blocks automatically and accurately.
-% We automatically classified our basic blocks by their use
-% of CPU resources and evaluated accuracy of existing cost models
-% for different classes of basic blocks. 
-% We showed that in certain classes of basic blocks 
-% (e.g. vectorized numerical kernels) even the most accurate
-% model is on average more than 30\% away from the ground truth.
-% In addition to cost model validation,
-% our dataset and the profiling infrastructure is useful
-% for data-driven cost model construction\cite{ithemal}.
 \end{abstract}

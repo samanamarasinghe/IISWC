@@ -296,7 +296,7 @@ Being able to profile with smaller unroll factors is essential
 for large basic blocks that typically show up in numerical kernels where
 hot inner loops are unrolled.
 
-\subsection{Enforcing Modeling Variants}\label{sec:invariants}
+\subsection{Enforcing Modeling Invariants}\label{sec:invariants}
 We guarantee that each measurement satisfies the following modeling assumptions:
 \begin{enumerate*}
     \item Every memory accesses leads to an L1 data cache hit. 
@@ -440,7 +440,6 @@ On a high level, there are three requirements to implementing our profiler:
     
     \item Being able to either detect or disable floating-point underflow.
 \end{itemize}
-
 Our technique assumes that, on average, virtual page aliasing does not incur performance penalty---in particular the penalty 
 caused by otherwise unnecessary cache invalidation 
 (i.e., when two aliased virtual addresses are mapped to different cache entries,
@@ -452,3 +451,11 @@ the page size is small enough, so the indexing bits are not affected by address 
 These two conditions are sufficient to establish that any two aliased virtual addresses
 are always mapped to the same cache entries;
 to our knowledge, this applies to recent implementations of x86-64 and ARM.
+
+The latter two requirements regarding
+the portability of our technique---being able to 
+count cache misses and detect floating-point underflows---depend
+on hardware implementations. Latest ARM microarchitectures, to our knowledge,
+have support for both types of hardware counters.
+Recent AMD x86-64 implementations also 
+have similar support.
