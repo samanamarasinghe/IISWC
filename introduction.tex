@@ -9,8 +9,8 @@ Performance models can also guide manual optimization by showing
 potential program bottlenecks.
 It is, however, no easy feat to construct an accurate performance model,
 which has to consider various microarchitectural optimizations employed by
-modern processors such as micro-op decomposition and out-of-order execution;
-to make the matter worse, some of these optimizations 
+modern processors such as micro-op decomposition and out-of-order execution.
+To make the matter worse, some of these optimizations 
 are not documented or proprietary.
 
 Despite the complexity that existing performance models have to deal with,
@@ -20,7 +20,7 @@ For instance, llvm-mca~\cite{llvm-mca}---which uses
 LLVM's scheduling models---has an average error of more than 40\% on vectorized
 basic blocks (Figure~\ref{fig:skl-cluster-err}).
 Inaccurate performance models can cause mis-optimizations;
-for instance, \cite{goslp}'s optimal\footnote{
+for instance, goslp's \cite{goslp} optimal\footnote{
 With certain caveat.
 In particular their formulation is optimal only when the target machine only has vector-width of 2} 
 formulation of SLP vectorization~\cite{slp},

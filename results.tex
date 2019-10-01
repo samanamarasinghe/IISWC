@@ -18,7 +18,7 @@ and these basic blocks are not included in the Ivy Bridge evaluation.
 For Skylake and Haswell, we used IACA 3.0;
 and for Ivy Bridge we used IACA 2.0 because IACA discontinued its support for
 Ivy Bridge after version 2.0.
-For llvm-mca, we used version 9.0.0.
+For llvm-mca, we used version 8.0.1.
 OSACA is currently under development, and we took the latest version
 at the time of writing this paper.
 For Ithemal too, we contacted the authors and obtained the latest version from them.
@@ -90,15 +90,15 @@ the need of basic block classification and per-category error reporting.
  
  \textbf{IACA}~\cite{iaca} is relatively stable compared to other models that we evaluated.
 An interesting point to note is that IACA is consistently accurate on basic blocks from OpenSSL. 
-OpenSSL is a crypto library that is dominated by basic blocks containing vector and scalar operations
-(category-1) and IACA models these well. 
+OpenSSL is a crypto library that is dominated by partially vectorized basic blocks
+and IACA models these well. 
 
     \textbf{llvm-mca}~\cite{llvm-mca} is considerably worse on all microarchitectures compared to IACA and Ithemal,
 especially on modeling basic blocks involving loads. Also, the per-application error increases on recent microarchitectures like Skylake and Haswell compared to Ivy Bridge.
 %We suspect the decrease in performance is a result of LLVM developers 
 %having less time to update the cost models for the relatively new microarchitectures. 
 
-\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks (e.g., category-2).
+\textbf{Ithemal}~\cite{ithemal} consistently outperforms other models, except on vectorized basic blocks.
 Ithemal is also considerably better than other models at modeling basic blocks with memory dependence,
 as demonstrated by its errors on predicting basic blocks from categories 4 and 8.
 We discussed Ithemal's underperformance on vectorized basic blocks with the authors of Ithemal, who suggested that the inconsistency
@@ -119,15 +119,15 @@ many basic blocks.
 \textbf{Per-application error.} It is seen that per-application error for Haswell microarchitecture is worse for all estimation methods and it is especially prominent in llvm-mca~\cite{llvm-mca}. Also, note that OpenBLAS has significantly worse performance on Skylake for all analytical prediction methods. OpenBLAS contains lot of vectorized numerical kernels. We hypothesize that vector implementations in Skylake are different from older generations and are not modelled properly by the analytical estimation tools. Ithemal shows worse yet  similar performance on all microarchitectures for OpenBLAS. This may be because of the distributional bias in the training data of Ithemal.
 
 \textbf{Per-category error.} Generally speaking, basic blocks dominated by stores
-(category-4) are easier to predict,
+ are easier to predict,
 while the throughput of basic blocks that mixes load instructions
-with other operations (e.g., category-3) are considerably
+with other operations are considerably
 more difficult to predict -- the prediction error is on average more than
 twice higher than predicting basic blocks with only stores. 
 We surmise that this is due to weakness of existing analyzers to model 
 memory dependence.
 In addition to basic blocks with memory dependence,
-vectorized basic blocks (i.e. parts of category-1 and category-2) also cause high prediction errors.
+vectorized basic blocks also cause high prediction errors.
 \fi
 % TODO summarize error by applications
 

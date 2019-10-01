@@ -54,7 +54,7 @@ the scheduling model of LLVM is the only one exposed by an interface
 
 
 \vspace{1em}
-\noindent{\bf Modeling Assumptions.}
+\noindent{\bf Modeling Assumptions}
 All of cost models discussed above make the following assumptions about the execution context
 of the code they are modeling
 \begin{itemize}
@@ -82,7 +82,7 @@ More importantly, they do not lead directly to validating performance model at b
 Although in general, it is possible to estimate the throughput of 
 a basic block by inferring the scheduling of its instructions based on their
 port usage---this is the approach taken by llvm-mca~\cite{llvm-mca} and OSACA\cite{osaca}---this
-it is incomplete and does not take microarchitectural
+is incomplete and does not take microarchitectural
 optimizations that could alter the ``normal'' execution paths into account. 
 Examples of these optimizations include micro-op fusion and zero-idioms.
 Therefore, IACA\cite{iaca} is generally recognized as the more accurate analyzer
@@ -96,7 +96,7 @@ Google's EXEgesis team~\cite{exegesis} provides a tool that can automatically ex
 machine-readable instruction specifications from Intel's manual.
 llvm-exegesis, designed by the same team, is a tool that determines
 the latency of an input instruction opcode\footnote{
-Currently the tool is limited to instructions that does not touch memory or floating point registers} 
+Currently the tool is limited to instructions that do not touch memory or floating point registers} 
 by automatically generating a micro-benchmark that measures the opcode's average latency;
 some LLVM's developers use the tool to validate LLVM's scheduling model.
 

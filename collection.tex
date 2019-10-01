@@ -148,41 +148,41 @@ OpenSSL and Gzip have many bit-manipulation basic blocks, consistent with our an
     \textbf{Category} & \textbf{Description} & \textbf{\# Basic Blocks}\\
     \hline
     
-    Category-1 & 
-    Mix of Scalar and Vectorized arithmetic & 7710 
+    Scalar &
+    Scalar ALU operations with a few loads & 85208 
     \\
     \hline
     
-    Category-2 &
+    Vec &
     Purely Vector instructions & 1267
     \\
     \hline
     
-    Category-3 &
-    Mix of loads and stores & 58540 
+    Scalar/Vec & 
+    Mix of Scalar and Vectorized arithmetic & 7710 
     \\
     \hline
     
-    Category-4 &
+    Ld &
+    Mostly loads & 121412
+    \\
+    \hline
+    
+    St &
     Mostly stores & 55879 
     \\
     \hline
     
-    Category-5 &
-    ALU ops sprinkled with loads and stores & 85208 
+    Ld/St &
+    Mix of loads and stores & 58540 
     \\
     \hline
     
-    Category-6 &
-    Mostly loads & 121412
-    \\
-    \hline
 \end{tabular}
 \\
 ~\\
-\caption{Description of basic block categories. Note that this is only a brief
-summary of artificial features of each cluster and is by no means a comprehensive
-breakdown of each category.}
+\caption{Description of basic block categories.  Categories were automatically ``discovered''
+by LDA, and name of each category is decided by manual inspection.}
 \label{tab:categories}
 
 \end{table}

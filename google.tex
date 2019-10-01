@@ -9,16 +9,16 @@ interactive ad-hoc query system for analysis of read-only data,
 capable of running aggregation queries over trillion-row tables in seconds \cite{dremel}.
 
 We show the composition of basic blocks these two applications in Figure~\ref{fig:google-blocks}.
-Spanner and Dremel spend almost half of the time executing load instructions (category-6)---40\% and 50\%, respectively. 
+Spanner and Dremel spend almost half of the time executing load instructions---40\% and 50\%, respectively. 
 Compared to similar applications from our 
 data set,
 they spend significantly more
 time---12\% and 9\%, respectively---executing vectorized basic blocks.
 The closest applications in our dataset are
 SQLite and Redis, and in contrast, they spend 5.0\% and 0.2\%
-of the time executing (partially) vectorized basic blocks (category-1 and -2).
-This is evidence of Google's effort to optimize
-these applications.
+of the time executing (partially) vectorized basic blocks.
+% This is evidence of Google's effort to optimize
+% these applications.
 
 \begin{figure}[htbp!]
     \includegraphics[width=0.95\columnwidth]{figures/google-blocks.pdf}
